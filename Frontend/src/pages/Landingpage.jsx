@@ -30,7 +30,7 @@ const LandingPage = () => {
         <Bridge />
       <CategoryGallery 
         categories={categories} 
-        onCategoryClick={handleCategoryClick} 
+        onCategorylick={handleCategoryClick} 
       />
     </>
   );
