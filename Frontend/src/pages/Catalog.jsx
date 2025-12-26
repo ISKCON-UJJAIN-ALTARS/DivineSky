@@ -1,16 +1,44 @@
 import { useState, useEffect } from "react";
-import ProductCard from "../components/Catalog/ProductCard";
+import CategoryBar from "../components/Catalog/CategoryBar";
+import SubCategorySection from "../components/Catalog/SubCategorySection";
+import ProductGrid from "../components/Catalog/ProductGrid";
+import LoadingState from "../components/Catalog/LoadingState";
+import ErrorState from "../components/Catalog/ErrorState";
+import EmptyState from "../components/Catalog/EmptyState";
+import useInfiniteScroll from "../hooks/useInfiniteScroll";
 import "../styles/Catalog/Catalog.css";
+import "../styles/Catalog/Catalog-responsive.css";
 
 export default function Catalog({ search }) {
-  const [products, setProducts] = useState([]);
+  const [allProducts, setAllProducts] = useState([]);
+  const [displayedProducts, setDisplayedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedSubCategory, setSelectedSubCategory] = useState("");
-  const [hoveredCategory, setHoveredCategory] = useState(null); // ✅ NEW: Track hovered category
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
-  // ✅ NEW: Categories with subcategories
+  // Determine items per page based on screen size
+  const getItemsPerPage = () => {
+    if (window.innerWidth <= 768) return 6; // Mobile
+    return 10; // Desktop/Tablet
+  };
+
+  const [itemsPerPage, setItemsPerPage] = useState(getItemsPerPage());
+
+  // Update items per page on resize
+  useEffect(() => {
+    const handleResize = () => {
+      setItemsPerPage(getItemsPerPage());
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // Categories configuration
   const categories = [
     { 
       value: "all", 
@@ -21,55 +49,55 @@ export default function Catalog({ search }) {
       value: "altars", 
       label: "Altars & Temple Setups",
       subCategories: [
-        { value: "medium", label: "Medium Size",image:"" },
-        { value: "small", label: "Small Size",image:"" },
-        { value: "large", label: "Large Size",image:"" },
-        { value: "tovp", label: "TOVP Style Altar",image:"" },        
-        { value: "sp-altar", label: "Prabhupada Altar", image:"" },
+        { value: "medium", label: "Medium Size" },
+        { value: "small", label: "Small Size" },
+        { value: "large", label: "Large Size" },
+        { value: "tovp", label: "TOVP Style Altar" },        
+        { value: "sp-altar", label: "Prabhupada Altar" },
       ]
     },
     { 
       value: "deities", 
       label: "Deity Statues",
       subCategories: [
-        { value: "sp", label: "SP Deity",image:"" },
-        { value: "guru-parampara", label: "Guru Parampara",image:"" },
-        { value: "haridas", label: "Srila Haridas Thakur Deity",image:"" },
-        { value: "yashoda-damodara", label: "Yashoda Damodara",image:"" },
-        { value: "custom-deity", label: "Custom Deity",image:"" },
+        { value: "sp", label: "SP Deity" },
+        { value: "guru-parampara", label: "Guru Parampara" },
+        { value: "haridas", label: "Srila Haridas Thakur Deity" },
+        { value: "yashoda-damodara", label: "Yashoda Damodara" },
+        { value: "custom-deity", label: "Custom Deity" },
       ]
     },
     { 
       value: "sculptures", 
       label: "3D Reviels",
       subCategories: [
-        { value: "Gaura-Lila", label: "Gaura Lila",image:"" },
-        { value: "Krishna-Lila", label: "Krishna Lila",image:"" },
-        { value: "Other-Deities", label: "Other Deities",image:"" },
+        { value: "Gaura-Lila", label: "Gaura Lila" },
+        { value: "Krishna-Lila", label: "Krishna Lila" },
+        { value: "Other-Deities", label: "Other Deities" },
       ]
     },
     { 
       value: "custom", 
       label: "Divine Gifts",
       subCategories: [
-        { value: "laser-engravings", label: "Laser Engravings",image:"" },
+        { value: "laser-engravings", label: "Laser Engravings" },
       ]
     },
     { 
       value: "furniture", 
       label: "Spiritual Furniture",
       subCategories: [
-        { value: "tulsi-table", label: "Tulsi Table",image:"" },
-        { value: "reception-table", label: "Reception Table",image:"" },
-        { value: "doors", label: "Temple Doors",image:"" },
-        { value: "vyasasan", label: "Vyasasan",image:"" },
-        { value: "bookshelf", label: "Bookshelf", image:"" },
-        { value: "mridangam-stand", label: "Mridangam Stand", image:"" },
+        { value: "tulsi-table", label: "Tulsi Table" },
+        { value: "reception-table", label: "Reception Table" },
+        { value: "doors", label: "Temple Doors" },
+        { value: "vyasasan", label: "Vyasasan" },
+        { value: "bookshelf", label: "Bookshelf" },
+        { value: "mridangam-stand", label: "Mridangam Stand" },
       ]
     },
   ];
 
-  // Fetch products from backend
+  // Fetch products
   useEffect(() => {
     fetchProducts();
   }, [selectedCategory]);
@@ -78,18 +106,13 @@ export default function Catalog({ search }) {
     try {
       setLoading(true);
       setError(null);
-      
-      console.log("📥 Fetching products...");
-      console.log("Category:", selectedCategory);
+      setPage(1);
 
-      let url = "https://divinesky.onrender.com/products";
+      let url = `https://divinesky.onrender.com/products/`;
       
-      // If specific category selected, fetch only that category
       if (selectedCategory !== "all") {
         url = `https://divinesky.onrender.com/products/${selectedCategory}`;
       }
-
-      console.log("Fetching from:", url);
 
       const response = await fetch(url);
       
@@ -98,17 +121,19 @@ export default function Catalog({ search }) {
       }
 
       const data = await response.json();
-      console.log("Fetched data:", data);
 
       if (data.success) {
         const productsArray = Array.isArray(data.products) 
           ? data.products 
           : Object.values(data.products || {});
-
-        console.log("Products count:", productsArray.length);
-        setProducts(productsArray);
+        
+        setAllProducts(productsArray);
+        setDisplayedProducts(productsArray.slice(0, itemsPerPage));
+        setHasMore(productsArray.length > itemsPerPage);
       } else {
-        setProducts([]);
+        setAllProducts([]);
+        setDisplayedProducts([]);
+        setHasMore(false);
       }
 
       setLoading(false);
@@ -116,101 +141,103 @@ export default function Catalog({ search }) {
       console.error("Fetch error:", err);
       setError(err.message);
       setLoading(false);
-      setProducts([]);
+      setAllProducts([]);
+      setDisplayedProducts([]);
+      setHasMore(false);
     }
   };
 
-  // ✅ NEW: Handle category change
+  // Load more products
+  const loadMoreProducts = () => {
+    if (isLoadingMore || !hasMore) return;
+
+    setIsLoadingMore(true);
+
+    // Simulate network delay for smooth UX
+    setTimeout(() => {
+      const nextPage = page + 1;
+      const startIndex = page * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
+      
+      const filteredProducts = getFilteredProducts();
+      const newProducts = filteredProducts.slice(startIndex, endIndex);
+      
+      setDisplayedProducts(prev => [...prev, ...newProducts]);
+      setPage(nextPage);
+      setHasMore(endIndex < filteredProducts.length);
+      setIsLoadingMore(false);
+    }, 300);
+  };
+
+  // Custom hook for infinite scroll
+  const loadMoreRef = useInfiniteScroll(loadMoreProducts, hasMore && !isLoadingMore);
+
+  // Get filtered products based on search and subcategory
+  const getFilteredProducts = () => {
+    return allProducts.filter((p) => {
+      const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase()) ||
+                           p.category.toLowerCase().includes(search.toLowerCase());
+      const matchesSubCategory = !selectedSubCategory || p.subCategory === selectedSubCategory;
+      return matchesSearch && matchesSubCategory;
+    });
+  };
+
+  // Update displayed products when filters change
+  useEffect(() => {
+    const filtered = getFilteredProducts();
+    setDisplayedProducts(filtered.slice(0, itemsPerPage));
+    setPage(1);
+    setHasMore(filtered.length > itemsPerPage);
+  }, [search, selectedSubCategory, allProducts, itemsPerPage]);
+
+  // Handle category change
   const handleCategoryChange = (categoryValue) => {
     setSelectedCategory(categoryValue);
-    setSelectedSubCategory(""); // Reset subcategory when category changes
+    setSelectedSubCategory("");
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // ✅ NEW: Handle subcategory change
-  const handleSubCategoryChange = (categoryValue, subCategoryValue) => {
-    setSelectedCategory(categoryValue);
+  // Handle subcategory change
+  const handleSubCategoryChange = (subCategoryValue) => {
     setSelectedSubCategory(subCategoryValue);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // ✅ UPDATED: Filter products based on search and subcategory
-  const filteredProducts = products.filter((p) => {
-    // Search filter
-    const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase()) ||
-                         p.category.toLowerCase().includes(search.toLowerCase());
-    
-    // Subcategory filter
-    const matchesSubCategory = !selectedSubCategory || p.subCategory === selectedSubCategory;
-    
-    return matchesSearch && matchesSubCategory;
-  });
+  // Get current category subcategories
+  const currentCategory = categories.find(c => c.value === selectedCategory);
+  const hasSubCategories = currentCategory?.subCategories?.length > 0;
+
+  const filteredProducts = getFilteredProducts();
 
   return (
     <div className="catalog-wrapper">
-      {/* Tesla-Style Category Bar with Dropdown */}
-      <div className="category-bar">
-        <nav 
-          className="category-nav"
-          onMouseLeave={() => setHoveredCategory(null)}
-        >
-          {categories.map((cat) => (
-            <div
-              key={cat.value}
-              className={`category-item ${selectedCategory === cat.value ? "active" : ""} ${hoveredCategory === cat.value ? "hovered" : ""}`}
-              onMouseEnter={() => cat.subCategories.length > 0 && setHoveredCategory(cat.value)}
-            >
-              <button
-                className="category-trigger"
-                onClick={() => handleCategoryChange(cat.value)}
-              >
-                {cat.label}
-              </button>
-            </div>
-          ))}
-        </nav>
+      {/* Category Bar */}
+      <CategoryBar
+        categories={categories}
+        selectedCategory={selectedCategory}
+        onCategoryChange={handleCategoryChange}
+      />
 
-        {/* ✅ NEW: Single mega menu that shows different content based on hovered category */}
-        {hoveredCategory && categories.find(c => c.value === hoveredCategory)?.subCategories.length > 0 && (
-          <div 
-            className="subcategory-dropdown active"
-            onMouseEnter={() => setHoveredCategory(hoveredCategory)}
-            onMouseLeave={() => setHoveredCategory(null)}
-          >
-            <div className="subcategory-content">
-              <h4 className="subcategory-title">
-                {categories.find(c => c.value === hoveredCategory)?.label}
-              </h4>
-              <div className="subcategory-grid">
-                {categories.find(c => c.value === hoveredCategory)?.subCategories.map((sub) => (
-                  <button
-                    key={sub.value}
-                    className={`subcategory-link ${
-                      selectedCategory === hoveredCategory && selectedSubCategory === sub.value 
-                        ? "active" 
-                        : ""
-                    }`}
-                    onClick={() => {
-                      handleSubCategoryChange(hoveredCategory, sub.value);
-                      setHoveredCategory(null);
-                    }}
-                  >
-                    <span>{sub.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+      {/* Subcategory Section - Netflix Style */}
+      {!loading && hasSubCategories && (
+        <SubCategorySection
+          category={currentCategory}
+          selectedSubCategory={selectedSubCategory}
+          onSubCategoryChange={handleSubCategoryChange}
+          products={allProducts}
+        />
+      )}
 
-      {/* ✅ NEW: Active Filter Display */}
+      {/* Active Filter Display */}
       {selectedSubCategory && (
         <div className="active-filters">
           <span className="filter-label">Filtered by:</span>
           <span className="filter-tag">
-            {categories.find(c => c.value === selectedCategory)?.subCategories.find(s => s.value === selectedSubCategory)?.label}
+            {currentCategory?.subCategories.find(s => s.value === selectedSubCategory)?.label}
             <button 
               className="filter-remove"
               onClick={() => setSelectedSubCategory("")}
+              aria-label="Remove filter"
             >
               ✕
             </button>
@@ -219,60 +246,56 @@ export default function Catalog({ search }) {
       )}
 
       {/* Loading State */}
-      {loading && (
-        <div className="loading-state">
-          <div className="spinner"></div>
-          <p>Loading products...</p>
-        </div>
-      )}
+      {loading && <LoadingState />}
 
       {/* Error State */}
       {error && !loading && (
-        <div className="error-state">
-          <p>Error loading products: {error}</p>
-          <button onClick={fetchProducts} className="retry-btn">
-            Retry
-          </button>
-        </div>
+        <ErrorState error={error} onRetry={fetchProducts} />
       )}
 
       {/* Empty State */}
       {!loading && !error && filteredProducts.length === 0 && (
-        <div className="empty-state">
-          <div className="empty-icon">📦</div>
-          <p>No products found</p>
-          {search && <p className="empty-hint">Try a different search term</p>}
-          {selectedSubCategory && (
-            <button 
-              onClick={() => setSelectedSubCategory("")} 
-              className="view-all-btn"
-            >
-              Clear Filter
-            </button>
-          )}
-          {selectedCategory !== "all" && !search && !selectedSubCategory && (
-            <button 
-              onClick={() => handleCategoryChange("all")} 
-              className="view-all-btn"
-            >
-              View All Products
-            </button>
-          )}
-        </div>
+        <EmptyState
+          search={search}
+          selectedSubCategory={selectedSubCategory}
+          selectedCategory={selectedCategory}
+          onClearFilter={() => setSelectedSubCategory("")}
+          onViewAll={() => {
+            setSelectedCategory("all");
+            setSelectedSubCategory("");
+          }}
+        />
       )}
 
       {/* Products Grid */}
       {!loading && !error && filteredProducts.length > 0 && (
         <>
           <div className="catalog-stats">
-            <p>Showing {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''}</p>
+            <p>
+              Showing {displayedProducts.length} of {filteredProducts.length} product
+              {filteredProducts.length !== 1 ? 's' : ''}
+            </p>
           </div>
 
-          <div className="catalog-grid">
-            {filteredProducts.map((p) => (
-              <ProductCard key={p.id} {...p} />
-            ))}
-          </div>
+          <ProductGrid products={displayedProducts} />
+
+          {/* Load More Trigger */}
+          {hasMore && (
+            <div ref={loadMoreRef} className="load-more-trigger">
+              {isLoadingMore && (
+                <div className="loading-more">
+                  <div className="spinner-small"></div>
+                  <p>Loading more products...</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {!hasMore && displayedProducts.length > itemsPerPage && (
+            <div className="end-message">
+              <p>You've reached the end! 🎉</p>
+            </div>
+          )}
         </>
       )}
     </div>

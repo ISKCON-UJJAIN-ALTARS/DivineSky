@@ -5,10 +5,18 @@ const router = express.Router();
 
 /**
  * 🌍 GET /products
- * Fetch all products from all categories
+ * Fetch all products from all categories with pagination
+ * Query params:
+ *   - page: Page number (default: 1)
+ *   - limit: Items per page (default: 20)
+ *   - subCategory: Filter by subcategory
  */
 router.get("/", async (req, res) => {
   try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const subCategory = req.query.subCategory || "";
+    
     const categories = ["altars", "deities", "sculptures", "custom", "furniture"];
     const allProducts = [];
 
@@ -21,23 +29,40 @@ router.get("/", async (req, res) => {
           ...Object.values(data.products).map((p) => ({
             ...p,
             category: p.category || category,
-            // Ensure images is always an array (backward compatibility)
             images: Array.isArray(p.images) 
               ? p.images 
               : (p.image ? [{ url: p.image, size: p.imageSize, mimetype: p.imageType }] : []),
-            // Keep model data if it exists
             hasModel: !!p.model,
-            // Keep video data if it exists
             hasVideo: !!p.video,
           }))
         );
       }
     }
 
+    // Filter by subcategory if provided
+    let filteredProducts = allProducts;
+    if (subCategory) {
+      filteredProducts = allProducts.filter(p => p.subCategory === subCategory);
+    }
+
+    // Calculate pagination
+    const totalProducts = filteredProducts.length;
+    const totalPages = Math.ceil(totalProducts / limit);
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
+
     res.json({
       success: true,
-      products: allProducts,
-      total_products: allProducts.length,
+      products: paginatedProducts,
+      pagination: {
+        current_page: page,
+        total_pages: totalPages,
+        total_products: totalProducts,
+        per_page: limit,
+        has_next: page < totalPages,
+        has_prev: page > 1,
+      }
     });
   } catch (err) {
     console.error("Error fetching all products:", err);
@@ -50,11 +75,18 @@ router.get("/", async (req, res) => {
 
 /**
  * 🌍 GET /products/:category
- * Fetch all products from a specific category
+ * Fetch all products from a specific category with pagination
+ * Query params:
+ *   - page: Page number (default: 1)
+ *   - limit: Items per page (default: 20)
+ *   - subCategory: Filter by subcategory
  */
 router.get("/:category", async (req, res) => {
   try {
     const { category } = req.params;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const subCategory = req.query.subCategory || "";
     
     // Validate category
     const validCategories = ["altars", "deities", "sculptures", "custom", "furniture"];
@@ -73,27 +105,50 @@ router.get("/:category", async (req, res) => {
         success: true,
         category,
         products: [],
-        total_products: 0,
+        pagination: {
+          current_page: 1,
+          total_pages: 0,
+          total_products: 0,
+          per_page: limit,
+          has_next: false,
+          has_prev: false,
+        }
       });
     }
 
-    const productsArray = Object.values(data.products || {}).map((p) => ({
+    let productsArray = Object.values(data.products || {}).map((p) => ({
       ...p,
-      // Ensure images is always an array (backward compatibility)
       images: Array.isArray(p.images) 
         ? p.images 
         : (p.image ? [{ url: p.image, size: p.imageSize, mimetype: p.imageType }] : []),
-      // Keep model data if it exists
       hasModel: !!p.model,
-      // Keep video data if it exists
       hasVideo: !!p.video,
     }));
+
+    // Filter by subcategory if provided
+    if (subCategory) {
+      productsArray = productsArray.filter(p => p.subCategory === subCategory);
+    }
+
+    // Calculate pagination
+    const totalProducts = productsArray.length;
+    const totalPages = Math.ceil(totalProducts / limit);
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedProducts = productsArray.slice(startIndex, endIndex);
 
     res.json({
       success: true,
       category,
-      products: productsArray,
-      total_products: productsArray.length,
+      products: paginatedProducts,
+      pagination: {
+        current_page: page,
+        total_pages: totalPages,
+        total_products: totalProducts,
+        per_page: limit,
+        has_next: page < totalPages,
+        has_prev: page > 1,
+      },
       last_updated: data.last_updated,
     });
   } catch (err) {
@@ -137,17 +192,13 @@ router.get("/:category/:id", async (req, res) => {
     // Transform product data for response
     const productResponse = {
       ...product,
-      // Ensure images is always an array (backward compatibility)
       images: Array.isArray(product.images) 
         ? product.images 
         : (product.image 
             ? [{ url: product.image, size: product.imageSize, mimetype: product.imageType }] 
             : []),
-      // Keep model data if it exists
       hasModel: !!product.model,
-      // Keep video data if it exists
       hasVideo: !!product.video,
-      // Add image count for convenience
       imageCount: Array.isArray(product.images) 
         ? product.images.length 
         : (product.image ? 1 : 0),
@@ -162,6 +213,89 @@ router.get("/:category/:id", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to fetch product",
+    });
+  }
+});
+
+/**
+ * 🌍 GET /products/subcategory/:category/:subCategory
+ * Fetch products by category and subcategory with pagination
+ * This is a dedicated endpoint for subcategory filtering
+ */
+router.get("/subcategory/:category/:subCategory", async (req, res) => {
+  try {
+    const { category, subCategory } = req.params;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10; // Default 10 for subcategory view
+    
+    // Validate category
+    const validCategories = ["altars", "deities", "sculptures", "custom", "furniture"];
+    if (!validCategories.includes(category)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid category. Must be one of: ${validCategories.join(", ")}`,
+      });
+    }
+
+    const jsonKey = `products/${category}.json`;
+    const data = await getJsonFromR2(jsonKey);
+
+    if (!data) {
+      return res.json({
+        success: true,
+        category,
+        subCategory,
+        products: [],
+        pagination: {
+          current_page: 1,
+          total_pages: 0,
+          total_products: 0,
+          per_page: limit,
+          has_next: false,
+          has_prev: false,
+        }
+      });
+    }
+
+    // Filter by subcategory
+    const productsArray = Object.values(data.products || {})
+      .filter(p => p.subCategory === subCategory)
+      .map((p) => ({
+        ...p,
+        images: Array.isArray(p.images) 
+          ? p.images 
+          : (p.image ? [{ url: p.image, size: p.imageSize, mimetype: p.imageType }] : []),
+        hasModel: !!p.model,
+        hasVideo: !!p.video,
+      }));
+
+    // Calculate pagination
+    const totalProducts = productsArray.length;
+    const totalPages = Math.ceil(totalProducts / limit);
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedProducts = productsArray.slice(startIndex, endIndex);
+
+    res.json({
+      success: true,
+      category,
+      subCategory,
+      products: paginatedProducts,
+      pagination: {
+        current_page: page,
+        total_pages: totalPages,
+        total_products: totalProducts,
+        per_page: limit,
+        has_next: page < totalPages,
+        has_prev: page > 1,
+      },
+      last_updated: data.last_updated,
+    });
+  } catch (err) {
+    console.error(`Error fetching products for subcategory:`, err);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch products",
     });
   }
 });

@@ -34,7 +34,7 @@ const HeroSection = ({ onExploreClick }) => {
 
         <div className="content-right">
           <div className="image-container">
-            <img src="/logo.png" alt="Divine Sky - Sacred Altar" />
+            <img src="../../HeroSection.jpeg" alt="Divine Sky - Sacred Altar" />
           </div>
         </div>
       </div>
