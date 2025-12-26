@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import CategoryBar from "../components/Catalog/CategoryBar";
 import SubCategorySection from "../components/Catalog/SubCategorySection";
 import ProductGrid from "../components/Catalog/ProductGrid";
@@ -10,6 +11,8 @@ import "../styles/Catalog/Catalog.css";
 import "../styles/Catalog/Catalog-responsive.css";
 
 export default function Catalog({ search }) {
+  const [searchParams] = useSearchParams();
+  
   const [allProducts, setAllProducts] = useState([]);
   const [displayedProducts, setDisplayedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -97,7 +100,19 @@ export default function Catalog({ search }) {
     },
   ];
 
-  // Fetch products
+  // Read category from URL on mount or when URL changes
+  useEffect(() => {
+    const categoryFromUrl = searchParams.get("category");
+    if (categoryFromUrl) {
+      // Check if the category exists in your categories array
+      const categoryExists = categories.some(cat => cat.value === categoryFromUrl);
+      if (categoryExists) {
+        setSelectedCategory(categoryFromUrl);
+      }
+    }
+  }, [searchParams]);
+
+  // Fetch products - FIXED for "all" category to get ALL products
   useEffect(() => {
     fetchProducts();
   }, [selectedCategory]);
@@ -108,34 +123,54 @@ export default function Catalog({ search }) {
       setError(null);
       setPage(1);
 
-      let url = `https://divinesky.onrender.com/products/`;
-      
-      if (selectedCategory !== "all") {
-        url = `https://divinesky.onrender.com/products/${selectedCategory}`;
-      }
+      let productsArray = [];
 
-      const response = await fetch(url);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      if (data.success) {
-        const productsArray = Array.isArray(data.products) 
-          ? data.products 
-          : Object.values(data.products || {});
+      if (selectedCategory === "all") {
+        // Fetch ALL products from all categories
+        const categoryValues = categories
+          .filter(cat => cat.value !== "all")
+          .map(cat => cat.value);
         
-        setAllProducts(productsArray);
-        setDisplayedProducts(productsArray.slice(0, itemsPerPage));
-        setHasMore(productsArray.length > itemsPerPage);
-      } else {
-        setAllProducts([]);
-        setDisplayedProducts([]);
-        setHasMore(false);
-      }
+        const fetchPromises = categoryValues.map(catValue =>
+          fetch(`https://divinesky.onrender.com/products/${catValue}`)
+            .then(res => res.json())
+            .then(data => {
+              if (data.success) {
+                return Array.isArray(data.products) 
+                  ? data.products 
+                  : Object.values(data.products || {});
+              }
+              return [];
+            })
+            .catch(err => {
+              console.error(`Error fetching ${catValue}:`, err);
+              return [];
+            })
+        );
 
+        const results = await Promise.all(fetchPromises);
+        productsArray = results.flat();
+      } else {
+        // Fetch specific category
+        const url = `https://divinesky.onrender.com/products/${selectedCategory}`;
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data.success) {
+          productsArray = Array.isArray(data.products) 
+            ? data.products 
+            : Object.values(data.products || {});
+        }
+      }
+      
+      setAllProducts(productsArray);
+      setDisplayedProducts(productsArray.slice(0, itemsPerPage));
+      setHasMore(productsArray.length > itemsPerPage);
       setLoading(false);
     } catch (err) {
       console.error("Fetch error:", err);
@@ -209,6 +244,9 @@ export default function Catalog({ search }) {
 
   const filteredProducts = getFilteredProducts();
 
+  // UPDATED: Show subcategory sections for specific categories (not "all")
+  const showSubCategorySections = selectedCategory !== "all" && hasSubCategories && !selectedSubCategory;
+
   return (
     <div className="catalog-wrapper">
       {/* Category Bar */}
@@ -218,14 +256,45 @@ export default function Catalog({ search }) {
         onCategoryChange={handleCategoryChange}
       />
 
-      {/* Subcategory Section - Netflix Style */}
-      {!loading && hasSubCategories && (
-        <SubCategorySection
-          category={currentCategory}
-          selectedSubCategory={selectedSubCategory}
-          onSubCategoryChange={handleSubCategoryChange}
-          products={allProducts}
-        />
+      {/* Loading State */}
+      {loading && <LoadingState />}
+
+      {/* Error State */}
+      {error && !loading && (
+        <ErrorState error={error} onRetry={fetchProducts} />
+      )}
+
+      {/* Show Subcategory Sections for specific categories */}
+      {!loading && showSubCategorySections && (
+        <div className="subcategory-sections-wrapper">
+          <div className="category-intro">
+            <h2>{currentCategory.label}</h2>
+            <p>Browse by type or scroll to see all products</p>
+          </div>
+          
+          {currentCategory.subCategories.map((subCat) => {
+            const subCategoryProducts = allProducts.filter(
+              p => p.subCategory === subCat.value
+            );
+            
+            if (subCategoryProducts.length === 0) return null;
+            
+            return (
+              <div key={subCat.value} className="subcategory-section">
+                <div className="subcategory-header">
+                  <h3>{subCat.label}</h3>
+                  <button 
+                    className="view-all-btn"
+                    onClick={() => handleSubCategoryChange(subCat.value)}
+                  >
+                    View All ({subCategoryProducts.length})
+                  </button>
+                </div>
+                <ProductGrid products={subCategoryProducts.slice(0, 8)} />
+              </div>
+            );
+          })}
+        </div>
       )}
 
       {/* Active Filter Display */}
@@ -245,14 +314,6 @@ export default function Catalog({ search }) {
         </div>
       )}
 
-      {/* Loading State */}
-      {loading && <LoadingState />}
-
-      {/* Error State */}
-      {error && !loading && (
-        <ErrorState error={error} onRetry={fetchProducts} />
-      )}
-
       {/* Empty State */}
       {!loading && !error && filteredProducts.length === 0 && (
         <EmptyState
@@ -267,8 +328,8 @@ export default function Catalog({ search }) {
         />
       )}
 
-      {/* Products Grid */}
-      {!loading && !error && filteredProducts.length > 0 && (
+      {/* Products Grid - Show when "all" category OR subcategory selected OR no subcategories */}
+      {!loading && !error && filteredProducts.length > 0 && !showSubCategorySections && (
         <>
           <div className="catalog-stats">
             <p>
