@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import ProductCard from "../components/ProductCard";
+import ProductCard from "../Catalog/ProductCard";
 import "../../styles/ReadyStock.css";
 
 export default function ReadyStock() {
@@ -14,8 +14,9 @@ export default function ReadyStock() {
     const fetchProducts = async () => {
       try {
         setLoading(true);
+        // ✅ FIXED: Changed from single quotes to backticks for template literal
         const response = await fetch(
-          `${import.meta.env.VITE_API_URL}/products/ready-stock?page=${page}&limit=20`
+          `https://divinesky.onrender.com/products/ready-stock?page=${page}&limit=20`
         );
         const data = await response.json();
 

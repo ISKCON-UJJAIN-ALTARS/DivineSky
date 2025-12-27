@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom"; // Make sure to import Link
 import "../styles/Navbar.css";
 
 export default function Navbar({ search, setSearch }) {
@@ -71,9 +72,9 @@ export default function Navbar({ search, setSearch }) {
     <>
       <nav className="navbar">
         {/* Logo */}
-        <div className="logo">
+        <Link to="/" className="logo">
           DIVIINE<span>SKY</span>
-        </div>
+        </Link>
 
         {/* Search - Desktop */}
         <div className="search-wrapper desktop-search">
@@ -87,22 +88,39 @@ export default function Navbar({ search, setSearch }) {
           <span className="search-icon">⌕</span>
         </div>
 
+        {/* Ready Stock Button - Desktop */}
+        <Link to="/ready-stock" className="ready-stock-btn desktop-ready-stock">
+          <span className="stock-icon">📦</span>
+          <span className="stock-text">Ready Stock</span>
+        </Link>
+
         {/* Links - Desktop */}
         <ul className={`nav-links ${isMobileMenuOpen ? "active" : ""}`}>
           <li>
-            <a href="/" onClick={handleLinkClick}>
+            <Link to="/" onClick={handleLinkClick}>
               Home
-            </a>
+            </Link>
           </li>
           <li>
-            <a href="/about" onClick={handleLinkClick}>
+            <Link to="/about" onClick={handleLinkClick}>
               About
-            </a>
+            </Link>
+          </li>
+          {/* Ready Stock Link - Mobile Menu */}
+          <li className="mobile-only-link">
+            <Link to="/ready-stock" onClick={handleLinkClick}>
+              <span className="stock-icon">📦</span> Ready Stock
+            </Link>
           </li>
         </ul>
 
         {/* Mobile Actions */}
         <div className="mobile-actions">
+          {/* Ready Stock Icon - Mobile */}
+          <Link to="/ready-stock" className="mobile-ready-stock" aria-label="Ready Stock">
+            📦
+          </Link>
+
           {/* Search Icon - Mobile */}
           <button
             className="mobile-search-btn"

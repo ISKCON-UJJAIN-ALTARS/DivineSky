@@ -5,10 +5,8 @@ const authRoutes = require("./routes/auth");
 const adminUploadRoutes = require("./routes/admin.upload.routes");
 const productRoutes = require("./routes/products.routes");
 const adminUpdateRoutes = require("./routes/admin-update.route");
-// In your main server file (e.g., server.js or app.js)
 const readyStockAdminRoutes = require('./routes/ready-stock.admin.routes');
 const readyStockPublicRoutes = require('./routes/ready-stock.public.routes');
-
 
 const app = express();
 
@@ -23,9 +21,9 @@ app.get("/", (req, res) => {
 // routes
 app.use("/auth", authRoutes);            // 🔐 login
 app.use("/admin", adminUploadRoutes);    // 🔐 admin protected
+app.use("/admin", adminUpdateRoutes);    // 🔐 admin protected
+app.use("/admin", readyStockAdminRoutes); // 🔐 admin ready stock
 app.use("/products", productRoutes);     // 🌍 public
-app.use("/admin", adminUpdateRoutes);
-// Add routes
-app.use('/api/admin', readyStockAdminRoutes);
-app.use('/api/products', readyStockPublicRoutes);
+app.use("/products", readyStockPublicRoutes); // 🌍 public ready stock
+
 module.exports = app;

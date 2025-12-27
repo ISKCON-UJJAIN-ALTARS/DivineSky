@@ -496,3 +496,97 @@ html {
     font-size: 1rem;
   }
 }
+
+/* READY STOCK BUTTON - DESKTOP */
+.ready-stock-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border: none;
+  border-radius: 12px;
+  color: white;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.ready-stock-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.4);
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+}
+
+.stock-icon {
+  font-size: 1.1rem;
+}
+
+.stock-text {
+  font-family: inherit;
+}
+
+/* MOBILE READY STOCK ICON */
+.mobile-ready-stock {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border-radius: 10px;
+  color: white;
+  font-size: 1.2rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.mobile-ready-stock:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.4);
+}
+
+/* Mobile only link styling */
+.mobile-only-link {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  /* Hide desktop ready stock button */
+  .desktop-ready-stock {
+    display: none;
+  }
+
+  /* Show mobile ready stock icon */
+  .mobile-ready-stock {
+    display: flex;
+  }
+
+  /* Show ready stock in mobile menu */
+  .mobile-only-link {
+    display: block;
+    border-top: 2px solid rgba(245, 158, 11, 0.2);
+    margin-top: 8px;
+    padding-top: 8px;
+  }
+
+  .mobile-only-link a {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(217, 119, 6, 0.1));
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    color: #fbbf24;
+    font-weight: 600;
+  }
+
+  .mobile-only-link a:hover {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.2));
+    border-color: #f59e0b;
+  }
+
+  .mobile-only-link .stock-icon {
+    margin-right: 8px;
+  }
+}
