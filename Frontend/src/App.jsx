@@ -11,6 +11,7 @@ import AdminLogin from "./pages/AdminLogin";
 import AdminRoute from "./routes/AdminRoute";
 import ManageProducts from "./components/Admin_Components/ManageProducts.jsx";
 import EditProduct from "./components/Admin_Components/EditProduct.jsx";
+import ReadyStock from "./Admin_Components/ReadyStock.jsx";
 
 export default function App() {
   const [search, setSearch] = useState("");
