@@ -9,34 +9,61 @@
 .catalog-wrapper {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 40px 40px 80px;
+  padding: 0 40px 80px;
   min-height: 100vh;
   background: linear-gradient(180deg, #fdfbf7 0%, #ffffff 100%);
   position: relative;
 }
 
 /* ================================
-   CATEGORY BAR
+   CATEGORY BAR - WITH HORIZONTAL SCROLL
 ================================ */
 .category-bar {
   position: sticky;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 100;
-  margin: -40px -40px 40px;
-  padding: 0 40px;
+  margin-left: calc(-50vw + 50%);
+  margin-right: calc(-50vw + 50%);
+  margin-bottom: 40px;
+  padding: 0;
   background: rgba(255, 255, 255, 0.98);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(217, 119, 6, 0.1);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(217, 119, 6, 0.3) transparent;
+}
+
+/* Custom Scrollbar Styling */
+.category-bar::-webkit-scrollbar {
+  height: 4px;
+}
+
+.category-bar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.category-bar::-webkit-scrollbar-thumb {
+  background: rgba(217, 119, 6, 0.3);
+  border-radius: 2px;
+}
+
+.category-bar::-webkit-scrollbar-thumb:hover {
+  background: rgba(217, 119, 6, 0.5);
 }
 
 .category-nav {
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 0;
-  max-width: 1400px;
-  margin: 0 auto;
+  min-width: max-content;
+  padding: 0 40px;
   position: relative;
   z-index: 101;
 }
@@ -167,10 +194,14 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 16px 40px;
-  margin: -40px -40px 30px;
+  padding: 16px 0;
+  margin-bottom: 30px;
   background: rgba(217, 119, 6, 0.05);
   border-bottom: 1px solid rgba(217, 119, 6, 0.1);
+  margin-left: calc(-50vw + 50%);
+  margin-right: calc(-50vw + 50%);
+  padding-left: calc(50vw - 50% + 40px);
+  padding-right: calc(50vw - 50% + 40px);
 }
 
 .filter-label {
