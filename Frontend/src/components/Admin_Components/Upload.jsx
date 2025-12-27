@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { CATEGORIES_OBJECT } from "../../config/categories";
 import "../../styles/Admin/Upload.css";
 
 export default function Upload() {
@@ -13,60 +14,11 @@ export default function Upload() {
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("altars");
-  const [subCategory, setSubCategory] = useState(""); // ✅ NEW
+  const [subCategory, setSubCategory] = useState("");
 
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState("");
   const [isUploading, setIsUploading] = useState(false);
-
-  // ✅ NEW: Categories with subcategories
-  const categoriesWithSubs = {
-    altars: {
-      label: "Altars & Temple Setups",
-      subCategories: [
-        { value: "medium", label: "Medium Size" },
-        { value: "small", label: "Small Size" },
-        { value: "large", label: "Large Size" },
-        { value: "tovp", label: "TOVP Style Altar" },
-         { value: "sp-altar", label: "Prabhupada Altar" },
-      ]
-    },
-    deities: {
-      label: "Deity Statues",
-      subCategories: [
-        { value: "sp", label: "SP Deity" },
-        { value: "guru-parampara", label: "Guru Parampara" },
-        { value: "haridas", label: "Srila Haridas Thakur Deity" },
-        { value: "yashoda-damodara", label: "Yashoda Damodara" },
-        { value: "custom-deity", label: "Custom Deity" },
-      ]
-    },
-    sculptures: {
-      label: "3D Reviels",
-      subCategories: [
-        { value: "Gaura-Lila", label: "Gaura Lila" },
-        { value: "Krishna-Lila", label: "Krishna Lila" },
-        { value: "Other-Deities", label: "Other Deities" },
-      ] 
-    },
-    custom: {
-      label: "Divine Gifts",
-      subCategories: [
-        { value: "laser-engravings", label: "Laser Engravings" },
-      ]
-    },
-    furniture: {
-      label: "Spiritual Furniture",
-      subCategories: [
-        { value: "tulsi-table", label: "Tulsi Table" },
-        { value: "reception-table", label: "Reception Table" },
-        { value: "vyasasan", label: "Vyasasan" },
-        { value: "bookshelf", label: "Bookshelf" },
-        { value: "mridangam-stand", label: "Mridangam Stand" },
-        { value: "doors", label: "Temple Doors" },
-      ]
-    },
-  };
 
   const handleModelChange = (e) => {
     const file = e.target.files[0];
@@ -150,7 +102,7 @@ export default function Upload() {
     reader.readAsDataURL(file);
   };
 
-  // ✅ NEW: Handle category change and reset subcategory
+  // Handle category change and reset subcategory
   const handleCategoryChange = (e) => {
     const newCategory = e.target.value;
     setCategory(newCategory);
@@ -174,8 +126,8 @@ export default function Upload() {
       return;
     }
 
-    // ✅ NEW: Validate subcategory if main category has subcategories
-    const hasSubCategories = categoriesWithSubs[category]?.subCategories?.length > 0;
+    // Validate subcategory if main category has subcategories
+    const hasSubCategories = CATEGORIES_OBJECT[category]?.subCategories?.length > 0;
     if (hasSubCategories && !subCategory) {
       alert("Please select a subcategory");
       return;
@@ -202,12 +154,12 @@ export default function Upload() {
     formData.append("price", price);
     formData.append("description", description);
     formData.append("category", category);
-    formData.append("subCategory", subCategory); // ✅ NEW
+    formData.append("subCategory", subCategory);
     formData.append("includeModel", includeModel);
 
     console.log("📤 Uploading product...");
     console.log("Category:", category);
-    console.log("SubCategory:", subCategory); // ✅ NEW
+    console.log("SubCategory:", subCategory);
     console.log("Model:", includeModel ? (model ? model.name : "No model") : "Model not included");
     console.log("Images:", images.length);
     console.log("Video:", video ? video.name : "No video");
@@ -273,13 +225,13 @@ export default function Upload() {
     setPrice("");
     setDescription("");
     setCategory("altars");
-    setSubCategory(""); // ✅ NEW
+    setSubCategory("");
     setProgress(0);
     setStatus("");
   };
 
-  // ✅ NEW: Get current subcategories
-  const currentSubCategories = categoriesWithSubs[category]?.subCategories || [];
+  // Get current subcategories
+  const currentSubCategories = CATEGORIES_OBJECT[category]?.subCategories || [];
   const hasSubCategories = currentSubCategories.length > 0;
 
   return (
@@ -444,7 +396,7 @@ export default function Upload() {
             />
           </div>
 
-          {/* ✅ UPDATED: Category with subcategories */}
+          {/* Category with subcategories */}
           <div className="form-group">
             <label className="label">Category *</label>
             <select
@@ -453,7 +405,7 @@ export default function Upload() {
               className="form-select"
               disabled={isUploading}
             >
-              {Object.entries(categoriesWithSubs).map(([key, value]) => (
+              {Object.entries(CATEGORIES_OBJECT).map(([key, value]) => (
                 <option key={key} value={key}>
                   {value.label}
                 </option>
@@ -461,12 +413,12 @@ export default function Upload() {
             </select>
           </div>
 
-          {/* ✅ NEW: Subcategory dropdown (conditional) */}
+          {/* Subcategory dropdown (conditional) */}
           {hasSubCategories && (
             <div className="form-group subcategory-group">
               <label className="label">
                 Subcategory * 
-                <span className="label-hint">for {categoriesWithSubs[category].label}</span>
+                <span className="label-hint">for {CATEGORIES_OBJECT[category].label}</span>
               </label>
               <select
                 value={subCategory}

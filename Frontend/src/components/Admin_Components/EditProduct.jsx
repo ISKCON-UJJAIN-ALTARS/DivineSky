@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { CATEGORIES_OBJECT, getCategoryLabel, getSubCategoryLabel } from "../../config/categories";
 import "../../styles/Admin/EditProduct.css";
 
 export default function EditProduct() {
@@ -17,55 +18,6 @@ export default function EditProduct() {
   const [description, setDescription] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(category);
   const [subCategory, setSubCategory] = useState("");
-  
-  // Categories with subcategories
-  const categoriesWithSubs = {
-    altars: {
-      label: "Altars & Temple Setups",
-      subCategories: [
-        { value: "medium", label: "Medium Size" },
-        { value: "small", label: "Small Size" },
-        { value: "large", label: "Large Size" },
-        { value: "tovp", label: "TOVP Style Altar" },
-        { value: "sp-altar", label: "Prabhupada Altar" },
-      ]
-    },
-    deities: {
-      label: "Deity Statues",
-      subCategories: [
-        { value: "sp", label: "SP Deity" },
-        { value: "guru-parampara", label: "Guru Parampara" },
-        { value: "haridas", label: "Srila Haridas Thakur Deity" },
-        { value: "yashoda-damodara", label: "Yashoda Damodara" },
-        { value: "custom-deity", label: "Custom Deity" },
-      ]
-    },
-    sculptures: {
-      label: "3D Reviels",
-      subCategories: [
-        { value: "Gaura-Lila", label: "Gaura Lila" },
-        { value: "Krishna-Lila", label: "Krishna Lila" },
-        { value: "Other-Deities", label: "Other Deities" },
-      ]
-    },
-    custom: {
-      label: "Divine Gifts",
-      subCategories: [
-        { value: "laser-engravings", label: "Laser Engravings" },
-      ]
-    },
-    furniture: {
-      label: "Spiritual Furniture",
-      subCategories: [
-        { value: "tulsi-table", label: "Tulsi Table" },
-        { value: "reception-table", label: "Reception Table" },
-        { value: "doors", label: "Temple Doors" },
-        { value: "vyasasan", label: "Vyasasan" },
-        { value: "bookshelf", label: "Bookshelf" },
-        { value: "mridangam-stand", label: "Mridangam Stand" },
-      ]
-    },
-  };
   
   // File states
   const [newImages, setNewImages] = useState([]);
@@ -101,7 +53,7 @@ export default function EditProduct() {
         setName(p.name);
         setPrice(p.price);
         setDescription(p.description || "");
-        setSelectedCategory(p.category || category); // ✅ Use product's actual category
+        setSelectedCategory(p.category || category);
         setSubCategory(p.subCategory || "");
       } else {
         setMessage({ type: "error", text: "Product not found" });
@@ -301,7 +253,7 @@ export default function EditProduct() {
     }
 
     // Validate subcategory if category has subcategories
-    const currentCategoryData = categoriesWithSubs[selectedCategory];
+    const currentCategoryData = CATEGORIES_OBJECT[selectedCategory];
     const hasSubCategories = currentCategoryData?.subCategories?.length > 0;
     if (hasSubCategories && !subCategory) {
       setMessage({ type: "error", text: "Please select a subcategory" });
@@ -310,7 +262,7 @@ export default function EditProduct() {
 
     // Confirm category change
     if (isChangingCategory) {
-      const confirmMsg = `This will move the product from "${categoriesWithSubs[category]?.label}" to "${categoriesWithSubs[selectedCategory]?.label}". Continue?`;
+      const confirmMsg = `This will move the product from "${getCategoryLabel(category)}" to "${getCategoryLabel(selectedCategory)}". Continue?`;
       if (!confirm(confirmMsg)) {
         return;
       }
@@ -323,7 +275,7 @@ export default function EditProduct() {
       const token = localStorage.getItem("admin_token");
       const formData = new FormData();
       
-      // ✅ ALWAYS send these fields to ensure they're updated properly
+      // ALWAYS send these fields to ensure they're updated properly
       formData.append("name", name.trim());
       formData.append("price", price);
       formData.append("description", description.trim());
@@ -376,10 +328,9 @@ export default function EditProduct() {
         setImagePreviews([]);
         setReplaceImages(false);
         
-        // ✅ IMPORTANT: Navigate to the NEW category if changed
+        // Navigate to the NEW category if changed
         setTimeout(() => {
           if (isChangingCategory && data.newCategory) {
-            // Redirect to the new category in products list
             navigate(`/admin/products?category=${data.newCategory}`);
           } else {
             navigate("/admin/products");
@@ -417,7 +368,7 @@ export default function EditProduct() {
   }
 
   // Get current subcategories based on selected category
-  const currentSubCategories = categoriesWithSubs[selectedCategory]?.subCategories || [];
+  const currentSubCategories = CATEGORIES_OBJECT[selectedCategory]?.subCategories || [];
   const hasSubCategories = currentSubCategories.length > 0;
 
   return (
@@ -445,13 +396,13 @@ export default function EditProduct() {
             <label>Current Category</label>
             <div className="current-category">
               <span className="category-badge">
-                {categoriesWithSubs[product.category || category]?.label || product.category || category}
+                {getCategoryLabel(product.category || category)}
               </span>
             </div>
             {product.subCategory && (
               <div className="current-subcategory">
                 <small>
-                  Subcategory: {categoriesWithSubs[product.category || category]?.subCategories?.find(s => s.value === product.subCategory)?.label || product.subCategory}
+                  Subcategory: {getSubCategoryLabel(product.category || category, product.subCategory)}
                 </small>
               </div>
             )}
@@ -531,7 +482,7 @@ export default function EditProduct() {
               }}
               className="category-select"
             >
-              {Object.entries(categoriesWithSubs).map(([key, value]) => (
+              {Object.entries(CATEGORIES_OBJECT).map(([key, value]) => (
                 <option key={key} value={key}>
                   {value.label}
                 </option>
@@ -539,7 +490,7 @@ export default function EditProduct() {
             </select>
             {selectedCategory !== category && (
               <small className="form-hint warning">
-                ⚠️ This will move the product to the "{categoriesWithSubs[selectedCategory].label}" category
+                ⚠️ This will move the product to the "{getCategoryLabel(selectedCategory)}" category
               </small>
             )}
           </div>
@@ -549,7 +500,7 @@ export default function EditProduct() {
             <div className="form-group subcategory-group">
               <label>
                 Subcategory *
-                <span className="label-hint">for {categoriesWithSubs[selectedCategory].label}</span>
+                <span className="label-hint">for {getCategoryLabel(selectedCategory)}</span>
               </label>
               <select
                 value={subCategory}
@@ -565,7 +516,7 @@ export default function EditProduct() {
               </select>
               {product.subCategory && subCategory !== product.subCategory && (
                 <small className="form-hint">
-                  Current: {categoriesWithSubs[product.category || category]?.subCategories?.find(s => s.value === product.subCategory)?.label || product.subCategory}
+                  Current: {getSubCategoryLabel(product.category || category, product.subCategory)}
                 </small>
               )}
             </div>

@@ -6,6 +6,7 @@ import LoadingState from "../components/Catalog/LoadingState";
 import ErrorState from "../components/Catalog/ErrorState";
 import EmptyState from "../components/Catalog/EmptyState";
 import useInfiniteScroll from "../hooks/useInfiniteScroll";
+import { CATEGORIES, getCategoryValues } from "../config/categories";
 import "../styles/Catalog/Catalog.css";
 import "../styles/Catalog/Catalog-responsive.css";
 
@@ -40,70 +41,11 @@ export default function Catalog({ search }) {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Categories configuration
-  const categories = [
-    { 
-      value: "all", 
-      label: "All Products",
-      subCategories: []
-    },
-    { 
-      value: "altars", 
-      label: "Altars & Temple Setups",
-      subCategories: [
-        { value: "medium", label: "Medium Size" },
-        { value: "small", label: "Small Size" },
-        { value: "large", label: "Large Size" },
-        { value: "tovp", label: "TOVP Style Altar" },        
-        { value: "sp-altar", label: "Prabhupada Altar" },
-      ]
-    },
-    { 
-      value: "deities", 
-      label: "Deity Statues",
-      subCategories: [
-        { value: "sp", label: "SP Deity" },
-        { value: "guru-parampara", label: "Guru Parampara" },
-        { value: "haridas", label: "Srila Haridas Thakur Deity" },
-        { value: "yashoda-damodara", label: "Yashoda Damodara" },
-        { value: "custom-deity", label: "Custom Deity" },
-      ]
-    },
-    { 
-      value: "sculptures", 
-      label: "3D Reviels",
-      subCategories: [
-        { value: "Gaura-Lila", label: "Gaura Lila" },
-        { value: "Krishna-Lila", label: "Krishna Lila" },
-        { value: "Other-Deities", label: "Other Deities" },
-      ]
-    },
-    { 
-      value: "custom", 
-      label: "Divine Gifts",
-      subCategories: [
-        { value: "laser-engravings", label: "Laser Engravings" },
-      ]
-    },
-    { 
-      value: "furniture", 
-      label: "Spiritual Furniture",
-      subCategories: [
-        { value: "tulsi-table", label: "Tulsi Table" },
-        { value: "reception-table", label: "Reception Table" },
-        { value: "doors", label: "Temple Doors" },
-        { value: "vyasasan", label: "Vyasasan" },
-        { value: "bookshelf", label: "Bookshelf" },
-        { value: "mridangam-stand", label: "Mridangam Stand" },
-      ]
-    },
-  ];
-
   // Read category from URL on mount or when URL changes
   useEffect(() => {
     const categoryFromUrl = searchParams.get("category");
     if (categoryFromUrl) {
-      const categoryExists = categories.some(cat => cat.value === categoryFromUrl);
+      const categoryExists = CATEGORIES.some(cat => cat.value === categoryFromUrl);
       if (categoryExists) {
         setSelectedCategory(categoryFromUrl);
       }
@@ -121,9 +63,7 @@ export default function Catalog({ search }) {
 
       if (category === "all") {
         // Fetch ALL products from all categories IN PARALLEL
-        const categoryValues = categories
-          .filter(cat => cat.value !== "all")
-          .map(cat => cat.value);
+        const categoryValues = getCategoryValues();
         
         // Use Promise.allSettled for better error handling
         const results = await Promise.allSettled(
@@ -250,7 +190,7 @@ export default function Catalog({ search }) {
   };
 
   // Get current category subcategories
-  const currentCategory = categories.find(c => c.value === selectedCategory);
+  const currentCategory = CATEGORIES.find(c => c.value === selectedCategory);
   const hasSubCategories = currentCategory?.subCategories?.length > 0;
 
   // Show subcategory sections only when:
@@ -263,7 +203,7 @@ export default function Catalog({ search }) {
     <div className="catalog-wrapper">
       {/* Category Bar */}
       <CategoryBar
-        categories={categories}
+        categories={CATEGORIES}
         selectedCategory={selectedCategory}
         onCategoryChange={handleCategoryChange}
       />

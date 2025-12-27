@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { CATEGORIES, getCategoryValues } from "../../config/categories";
 import "../../styles/Admin/ManageProducts.css";
 
 export default function ManageProducts() {
@@ -10,16 +11,6 @@ export default function ManageProducts() {
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
 
-  // All categories
-  const categories = [
-    { value: "all", label: "All Categories" },
-    { value: "altars", label: "Altars & Temple Setups" },
-    { value: "deities", label: "Deity Statues" },
-    { value: "sculptures", label: "3D Reviels" },
-    { value: "custom", label: "Divine Gifts" },
-    { value: "furniture", label: "Spiritual Furniture" },
-  ];
-
   useEffect(() => {
     fetchAllProducts();
   }, []);
@@ -29,8 +20,8 @@ export default function ManageProducts() {
       setLoading(true);
       setMessage({ type: "", text: "" });
 
-      // Define all category endpoints
-      const categoryValues = ["altars", "deities", "sculptures", "custom", "furniture"];
+      // Get all category values (excluding "all")
+      const categoryValues = getCategoryValues();
       
       // Fetch all categories in parallel
       const results = await Promise.allSettled(
@@ -194,7 +185,7 @@ export default function ManageProducts() {
               onChange={(e) => setSelectedCategory(e.target.value)}
               className="category-select"
             >
-              {categories.map(cat => (
+              {CATEGORIES.map(cat => (
                 <option key={cat.value} value={cat.value}>
                   {cat.label}
                 </option>
@@ -226,7 +217,7 @@ export default function ManageProducts() {
             )}
             {selectedCategory !== "all" && (
               <span className="filter-chip">
-                Category: {categories.find(c => c.value === selectedCategory)?.label}
+                Category: {CATEGORIES.find(c => c.value === selectedCategory)?.label}
                 <button onClick={() => setSelectedCategory("all")}>✕</button>
               </span>
             )}

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { getCategoryLabel } from "../config/categories";
 import "@google/model-viewer";
 import "../styles/ProductDetail.css";
 
@@ -58,16 +59,6 @@ export default function ProductDetail() {
       currency: 'INR',
       maximumFractionDigits: 0,
     }).format(price);
-  };
-
-  const getCategoryLabel = (cat) => {
-    const categoryMap = {
-      "altars": "Altars & Temple Setups",
-      "deities": "Deity Statues",
-      "sculptures": "3D Reviels",
-      "custom": "Divine Gifts"
-    };
-    return categoryMap[cat] || cat;
   };
 
   const handleModelLoad = () => {
@@ -300,13 +291,13 @@ export default function ProductDetail() {
             {product.hasModel && (
               <div className="detail-item">
                 <span className="detail-label">3D Model:</span>
-                <span className="detail-value"> Available</span>
+                <span className="detail-value">✅ Available</span>
               </div>
             )}
             {!product.hasModel && (
               <div className="detail-item">
                 <span className="detail-label">3D Model:</span>
-                <span className="detail-value"> Under Process</span>
+                <span className="detail-value">⏳ Under Process</span>
               </div>
             )}
             {product.created_at && (
