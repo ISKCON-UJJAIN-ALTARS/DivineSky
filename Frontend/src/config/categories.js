@@ -67,8 +67,8 @@ export const CATEGORIES = [
     ]
   },
   { 
-    value: "custom", 
-    label: "Divine Gifts",
+    value: "Laser_Engravings", 
+    label: "Laser Engravings",
     subCategories: [
       { value: "laser-engravings", label: "Laser Engravings" },
     ]

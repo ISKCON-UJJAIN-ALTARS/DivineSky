@@ -3,29 +3,42 @@ import { useNavigate } from "react-router-dom";
 import "../../styles/Catalog/ProductCard.css";
 
 export default function ProductCard({ 
+  product, // ✅ NEW: Accept product object
   id, 
   name, 
   price, 
   images, 
-  image, // Backward compatibility
+  image,
   category,
   hasModel,
 }) {
   const [imageError, setImageError] = useState(false);
   const navigate = useNavigate();
   
+  // ✅ Support both passing methods
+  const productData = product || {
+    id,
+    name,
+    price,
+    images,
+    image,
+    category,
+    hasModel
+  };
+  
   // Get the first image only (handle both old and new format)
-  const productImage = images && images.length > 0 
-    ? images[0].url 
-    : image;
+  const productImage = productData.images && productData.images.length > 0 
+    ? productData.images[0].url 
+    : productData.image;
 
   // Format price in Indian Rupees
-  const formatPrice = (price) => {
+  const formatPrice = (priceValue) => {
+    const numPrice = parseFloat(priceValue) || 0;
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
       maximumFractionDigits: 0,
-    }).format(price);
+    }).format(numPrice);
   };
 
   // Get category display name
@@ -56,7 +69,7 @@ export default function ProductCard({
         ) : (
           <img 
             src={productImage} 
-            alt={name}
+            alt={productData.name}
             onError={handleImageError}
             loading="lazy"
           />
@@ -64,35 +77,33 @@ export default function ProductCard({
         
         {/* Category Badge */}
         <div className="product-category-badge">
-          {getCategoryLabel(category)}
+          {getCategoryLabel(productData.category)}
         </div>
 
         {/* 3D Model Badge */}
-        {hasModel && (
+        {productData.hasModel && (
           <div className="model-badge" title="3D Model Available">
             🎨
           </div>
         )}
 
         {/* Image Count Badge */}
-        {images && images.length > 1 && (
+        {productData.images && productData.images.length > 1 && (
           <div className="image-count-badge">
-            📸 {images.length}
+            📸 {productData.images.length}
           </div>
         )}
       </div>
 
       {/* Product Info */}
       <div className="product-info">
-        <h3 className="product-name">{name}</h3>
-
-       
+        <h3 className="product-name">{productData.name}</h3>
 
         <div className="product-footer">
-          <span className="product-price">{formatPrice(price)}</span>
+          <span className="product-price">{formatPrice(productData.price)}</span>
           <button
             className="product-view-btn"
-            onClick={() => navigate(`/product/${category}/${id}`)}
+            onClick={() => navigate(`/product/${productData.category}/${productData.id}`)}
           >
             View Details →
           </button> 

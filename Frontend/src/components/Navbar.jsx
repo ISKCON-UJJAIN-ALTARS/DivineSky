@@ -1,35 +1,29 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom"; // Make sure to import Link
+import { Link } from "react-router-dom";
 import "../styles/Navbar.css";
 
 export default function Navbar({ search, setSearch }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
-  // Toggle mobile menu
   const toggleMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
-    // Close search when opening menu
     if (!isMobileMenuOpen) {
       setIsSearchOpen(false);
     }
   };
 
-  // Toggle search in mobile
   const toggleSearch = () => {
     setIsSearchOpen(!isSearchOpen);
-    // Close menu when opening search
     if (!isSearchOpen) {
       setIsMobileMenuOpen(false);
     }
   };
 
-  // Close menu when clicking a link
   const handleLinkClick = () => {
     setIsMobileMenuOpen(false);
   };
 
-  // Close menu/search on window resize
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth > 768) {
@@ -42,7 +36,6 @@ export default function Navbar({ search, setSearch }) {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Close menu on ESC key
   useEffect(() => {
     const handleEscape = (e) => {
       if (e.key === "Escape") {
@@ -55,7 +48,6 @@ export default function Navbar({ search, setSearch }) {
     return () => document.removeEventListener("keydown", handleEscape);
   }, [isMobileMenuOpen, isSearchOpen]);
 
-  // Prevent body scroll when menu is open
   useEffect(() => {
     if (isMobileMenuOpen) {
       document.body.style.overflow = "hidden";
@@ -76,25 +68,28 @@ export default function Navbar({ search, setSearch }) {
           DIVIINE<span>SKY</span>
         </Link>
 
-        {/* Search - Desktop */}
-        <div className="search-wrapper desktop-search">
-          <input
-            type="text"
-            className="search-input"
-            placeholder="Search products..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          <span className="search-icon">⌕</span>
+        {/* Center Group: Search + Ready Stock (Desktop Only) */}
+        <div className="navbar-center">
+          {/* Search - Desktop */}
+          <div className="search-wrapper desktop-search">
+            <input
+              type="text"
+              className="search-input"
+              placeholder="Search products..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            <span className="search-icon">⌕</span>
+          </div>
+
+          {/* Ready Stock Button - Desktop */}
+          <Link to="/ready-stock" className="ready-stock-btn desktop-ready-stock">
+            <span className="stock-icon">📦</span>
+            <span className="stock-text">Ready Stock</span>
+          </Link>
         </div>
 
-        {/* Ready Stock Button - Desktop */}
-        <Link to="/ready-stock" className="ready-stock-btn desktop-ready-stock">
-          <span className="stock-icon">📦</span>
-          <span className="stock-text">Ready Stock</span>
-        </Link>
-
-        {/* Links - Desktop */}
+        {/* Nav Links - Desktop */}
         <ul className={`nav-links ${isMobileMenuOpen ? "active" : ""}`}>
           <li>
             <Link to="/" onClick={handleLinkClick}>
@@ -106,7 +101,7 @@ export default function Navbar({ search, setSearch }) {
               About
             </Link>
           </li>
-          {/* Ready Stock Link - Mobile Menu */}
+          {/* Ready Stock Link - Mobile Menu Only */}
           <li className="mobile-only-link">
             <Link to="/ready-stock" onClick={handleLinkClick}>
               <span className="stock-icon">📦</span> Ready Stock
@@ -116,9 +111,10 @@ export default function Navbar({ search, setSearch }) {
 
         {/* Mobile Actions */}
         <div className="mobile-actions">
-          {/* Ready Stock Icon - Mobile */}
+          {/* Ready Stock Button - Mobile */}
           <Link to="/ready-stock" className="mobile-ready-stock" aria-label="Ready Stock">
-            📦
+            <span className="stock-icon">📦</span>
+            <span className="stock-text">Ready Stock</span>
           </Link>
 
           {/* Search Icon - Mobile */}
