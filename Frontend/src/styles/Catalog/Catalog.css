@@ -16,7 +16,7 @@
 }
 
 /* ================================
-   CATEGORY BAR - WITH HORIZONTAL SCROLL
+   CATEGORY BAR - WITH HORIZONTAL SCROLL & SCROLL INDICATOR
 ================================ */
 .category-bar {
   position: sticky;
@@ -38,6 +38,69 @@
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
   scrollbar-color: rgba(217, 119, 6, 0.3) transparent;
+  position: relative;
+}
+
+/* Scroll Indicator Container - Fixed position */
+.category-bar-wrapper {
+  position: relative;
+}
+
+.scroll-indicator {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 4px;
+  width: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 40px;
+  background: linear-gradient(to left, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.98) 60%, rgba(255, 255, 255, 0) 100%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 102;
+}
+
+.scroll-indicator.visible {
+  opacity: 1;
+}
+
+.scroll-arrow {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.6rem;
+  font-weight: bold;
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.4);
+  animation: pulse-arrow 2s ease-in-out infinite;
+  pointer-events: auto;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.scroll-arrow:hover {
+  transform: scale(1.15);
+  box-shadow: 0 6px 16px rgba(217, 119, 6, 0.5);
+}
+
+.scroll-arrow:active {
+  transform: scale(1.05);
+}
+
+@keyframes pulse-arrow {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
 }
 
 /* Custom Scrollbar Styling */

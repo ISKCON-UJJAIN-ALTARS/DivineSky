@@ -31,24 +31,9 @@ export const CATEGORIES = [
       { value: "SP_altars", label: "Prabhupada Altar" },
     ]
   },
-  {
-    value: "mridanga_stand",
-    label: "Mridangam Stand",
-    subCategories: [
-      { value: "mridangam-stand", label: "Mridangam Stand" },
-    ]
-  },
-  {
-    value: "tulsi_table_vyasasna",
-    label: "Tulsi Table & Vyasasan",
-    subCategories: [
-      { value: "tulsi-table", label: "Tulsi Table" },
-      { value: "vyasasan", label: "Vyasasan" },
-    ]
-  },
   { 
     value: "deities", 
-    label: "Deity Statues",
+    label: "Deities",
     subCategories: [
       { value: "sp", label: "SP Deity" },
       { value: "guru-parampara", label: "Guru Parampara" },
@@ -71,6 +56,21 @@ export const CATEGORIES = [
     label: "Laser Engravings",
     subCategories: [
       { value: "laser-engravings", label: "Laser Engravings" },
+    ]
+  },
+  {
+    value: "mridanga_stand",
+    label: "Mridangam Stand",
+    subCategories: [
+      { value: "mridangam-stand", label: "Mridangam Stand" },
+    ]
+  },
+  {
+    value: "tulsi_table_vyasasna",
+    label: "Tulsi Table & Vyasasan",
+    subCategories: [
+      { value: "tulsi-table", label: "Tulsi Table" },
+      { value: "vyasasan", label: "Vyasasan" },
     ]
   },
   { 

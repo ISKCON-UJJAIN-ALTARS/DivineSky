@@ -192,12 +192,13 @@ export default function Catalog({ search }) {
   // Get current category subcategories
   const currentCategory = CATEGORIES.find(c => c.value === selectedCategory);
   const hasSubCategories = currentCategory?.subCategories?.length > 0;
+  const hasMultipleSubCategories = currentCategory?.subCategories?.length > 1;
 
   // Show subcategory sections only when:
   // 1. Not viewing "all" category
-  // 2. Category has subcategories
+  // 2. Category has MULTIPLE subcategories (more than 1)
   // 3. No specific subcategory is selected
-  const showSubCategorySections = selectedCategory !== "all" && hasSubCategories && !selectedSubCategory;
+  const showSubCategorySections = selectedCategory !== "all" && hasMultipleSubCategories && !selectedSubCategory;
 
   return (
     <div className="catalog-wrapper">
@@ -216,7 +217,7 @@ export default function Catalog({ search }) {
         <ErrorState error={error} onRetry={() => fetchProducts(selectedCategory)} />
       )}
 
-      {/* Subcategory Sections - Netflix Style (showing only 3 products) */}
+      {/* Subcategory Sections - Netflix Style (showing only 3 products for multiple subcategories) */}
       {!loading && showSubCategorySections && (
         <div className="subcategory-sections-wrapper">
           <div className="category-intro">
@@ -281,7 +282,7 @@ export default function Catalog({ search }) {
         />
       )}
 
-      {/* Products Grid - Show when "all" category OR subcategory selected */}
+      {/* Products Grid - Show when "all" category OR subcategory selected OR single subcategory */}
       {!loading && !error && filteredProducts.length > 0 && !showSubCategorySections && (
         <>
           <div className="catalog-stats">
