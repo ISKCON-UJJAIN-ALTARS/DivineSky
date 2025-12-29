@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Navbar from "./components/Navbar";
 import Contact from "./components/Contact";
 import About from "./components/About";
+import Footer from "./components/Footer";
 
 import Catalog from "./pages/Catalog";
 import LandingPage from "./pages/Landingpage";
@@ -43,7 +44,14 @@ export default function App() {
   return (
     <Routes>
       {/* Public Routes */}
-      <Route path="/" element={<LandingPage />} />
+      <Route path="/" element={
+       <>
+       <LandingPage />
+       <Footer />
+       </> 
+    }
+         
+      />
 
       <Route
         path="/catalog"
