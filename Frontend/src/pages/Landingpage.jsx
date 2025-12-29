@@ -19,47 +19,47 @@ const LandingPage = () => {
     { 
       title: "Home Altars", 
       slug: "altars", 
-      image: "https://pub-43e577891e9c4714928c02b437c487ce.r2.dev/products/altars/60fac0cb-b3b1-4c15-bcb9-03e924e4e9d2.jpeg" 
+      image: "../../HomeAltar.jpeg" 
     },
     { 
       title: "Temple Altars", 
       slug: "temple_altar", 
-      image: "https://pub-43e577891e9c4714928c02b437c487ce.r2.dev/products/altars/60fac0cb-b3b1-4c15-bcb9-03e924e4e9d2.jpeg" 
+      image: "../../TempleAltar.jpeg" 
     },
     { 
       title: "Prabhupada Altars", 
       slug: "sp_altar", 
-      image: "https://pub-43e577891e9c4714928c02b437c487ce.r2.dev/products/altars/60fac0cb-b3b1-4c15-bcb9-03e924e4e9d2.jpeg" 
+      image: "../../PrabhupadaAltar.jpeg" 
     },
     { 
       title: "Deities", 
       slug: "deities", 
-      image: "https://pub-43e577891e9c4714928c02b437c487ce.r2.dev/products/deities/06c07679-7777-4367-9d0a-10fb0ebbaa1b.jpeg" 
+      image: "../../Deity.jpeg" 
     },
     { 
       title: "3D Reliefs", 
       slug: "sculptures", 
-      image: "https://pub-43e577891e9c4714928c02b437c487ce.r2.dev/products/sculptures/2fb00765-8ff3-4a59-bd23-67dc02a4ef30.jpeg" 
+      image: "../../3dReliefs.jpeg" 
     },
     { 
       title: "Laser Engravings", 
       slug: "Laser_Engravings", 
-      image: "https://pub-43e577891e9c4714928c02b437c487ce.r2.dev/products/custom/5f44c360-60a5-4170-8df5-eec47ae2b98b.jpeg" 
+      image: "../../LaserEngravings.jpeg" 
     },
     { 
       title: "Spiritual Furniture", 
       slug: "furniture", 
-      image: "https://pub-43e577891e9c4714928c02b437c487ce.r2.dev/products/furniture/bb81407c-0dcb-4b58-8afd-48f2d617040b.jpeg"
+      image: "../../furniture.jpeg"
     },
     { 
       title: "Tulsi Table & Vyasasan", 
       slug: "tulsi_table_vyasasan", 
-      image: "https://pub-43e577891e9c4714928c02b437c487ce.r2.dev/products/furniture/bb81407c-0dcb-4b58-8afd-48f2d617040b.jpeg"
+      image: "../../TulsiTable.jpeg"
     },
     { 
       title: "Mridangam Stand", 
       slug: "mridanga_stand", 
-      image: "https://pub-43e577891e9c4714928c02b437c487ce.r2.dev/products/furniture/bb81407c-0dcb-4b58-8afd-48f2d617040b.jpeg"
+      image: "../../MridangamStand.jpeg"
     },
   ];
 
