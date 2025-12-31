@@ -6,7 +6,7 @@
 const API_BASE_URL = 
   (typeof process !== 'undefined' && process.env?.REACT_APP_API_URL) || 
   (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) ||
-  'https://divinesky.onrender.com';
+  'https://divinesky-613l.onrender.com';
 
 // API Endpoints
 export const API_ENDPOINTS = {
