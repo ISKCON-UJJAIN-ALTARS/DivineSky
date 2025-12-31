@@ -39,7 +39,7 @@ export const CATEGORIES = [
       { value: "guru-parampara", label: "Guru Parampara" },
       { value: "haridas", label: "Srila Haridas Thakur Deity" },
       { value: "yashoda-damodara", label: "Yashoda Damodara" },
-      { value: "custom-deity", label: "Custom Deity" },
+      { value: "custom-deity", label: "Other Deity" },
     ]
   },
   { 
