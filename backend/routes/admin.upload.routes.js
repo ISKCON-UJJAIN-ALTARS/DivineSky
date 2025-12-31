@@ -60,7 +60,7 @@ router.post(
       }
 
       // Validate category
-      const validCategories = ["altars", "deities", "sculptures", "Laser_Engravings", "furniture", "tulsi_table_vyasasna","mridanga_stand","SP_altar","temple_altar"];
+      const validCategories = ["altars", "deities", "sculptures", "Laser_Engravings", "furniture", "tulsi_table_vyasasna","mridanga_stand","Prabhupada_altars","temple_altar"];
       if (!validCategories.includes(category)) {
         return res.status(400).json({
           success: false,

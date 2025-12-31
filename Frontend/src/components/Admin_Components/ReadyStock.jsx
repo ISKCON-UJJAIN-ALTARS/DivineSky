@@ -115,7 +115,7 @@ export default function ReadyStock() {
           <p className="empty-subtitle">
             Check back soon for new ready-to-ship items!
           </p>
-          <a href="/" className="browse-btn">
+          <a href="/catalog" className="browse-btn">
             Browse All Products
           </a>
         </div>
