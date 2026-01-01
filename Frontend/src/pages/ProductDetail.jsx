@@ -17,6 +17,16 @@ export default function ProductDetail() {
   const [showModel, setShowModel] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [showVideo, setShowVideo] = useState(false);
+  
+  // Touch/Swipe handling
+  const [touchStart, setTouchStart] = useState(0);
+  const [touchEnd, setTouchEnd] = useState(0);
+
+  // WhatsApp number
+  const WHATSAPP_NUMBER = "919630300426";
+
+  // Minimum swipe distance (in px)
+  const minSwipeDistance = 50;
 
   useEffect(() => {
     fetchProduct();
@@ -62,6 +72,25 @@ export default function ProductDetail() {
     }).format(price);
   };
 
+  const handleWhatsAppOrder = () => {
+    if (!product) return;
+
+    const message = `Hello! I'm interested in ordering this product:
+
+📦 *${product.name}*
+💰 Price: ${formatPrice(product.price)}
+🆔 Product ID: ${product.id}
+📂 Category: ${getCategoryLabel(product.category)}
+
+${product.images && product.images.length > 0 ? `\n🖼️ Product Image: ${product.images[0].url}` : ''}
+
+Please provide more details about availability and delivery.`;
+
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappURL = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodedMessage}`;
+    window.open(whatsappURL, '_blank');
+  };
+
   const handleModelLoad = () => {
     console.log("Model loaded successfully");
     setModelLoading(false);
@@ -72,6 +101,52 @@ export default function ProductDetail() {
     console.error("Model load error:", e);
     setModelLoading(false);
     setModelError(true);
+  };
+
+  // Touch handlers for swipe
+  const onTouchStart = (e) => {
+    setTouchEnd(0);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    
+    if (isLeftSwipe && product.images) {
+      setSelectedImageIndex((prev) => 
+        prev < product.images.length - 1 ? prev + 1 : 0
+      );
+    }
+    
+    if (isRightSwipe && product.images) {
+      setSelectedImageIndex((prev) => 
+        prev > 0 ? prev - 1 : product.images.length - 1
+      );
+    }
+  };
+
+  const goToNextImage = () => {
+    if (product.images) {
+      setSelectedImageIndex((prev) => 
+        prev < product.images.length - 1 ? prev + 1 : 0
+      );
+    }
+  };
+
+  const goToPreviousImage = () => {
+    if (product.images) {
+      setSelectedImageIndex((prev) => 
+        prev > 0 ? prev - 1 : product.images.length - 1
+      );
+    }
   };
 
   if (loading) {
@@ -98,16 +173,13 @@ export default function ProductDetail() {
 
   return (
     <div className="product-detail-container">
-      {/* Back Button */}
       <button onClick={() => navigate(-1)} className="back-button">
         ← Back
       </button>
 
       <div className="product-detail-wrapper">
-        {/* Image/Model/Video Viewer Section */}
         <div className="viewer-section">
           {showModel && product.hasModel ? (
-            // 3D Model Viewer
             <div className="model-viewer-container">
               {modelError ? (
                 <div className="model-error-placeholder">
@@ -148,7 +220,6 @@ export default function ProductDetail() {
                     )}
                   </model-viewer>
 
-                  {/* Model Controls Info */}
                   <div className="model-controls-info">
                     <div className="control-tip">
                       <span className="control-icon">🖱️</span>
@@ -166,7 +237,6 @@ export default function ProductDetail() {
                 </>
               )}
               
-              {/* Back to Images Button */}
               <button 
                 className="toggle-view-btn"
                 onClick={() => setShowModel(false)}
@@ -175,7 +245,6 @@ export default function ProductDetail() {
               </button>
             </div>
           ) : showVideo && product.video ? (
-            // Video Player
             <div className="video-viewer-container">
               <video 
                 src={product.video} 
@@ -186,7 +255,6 @@ export default function ProductDetail() {
                 Your browser does not support the video tag.
               </video>
               
-              {/* Back to Gallery Button */}
               <button 
                 className="toggle-view-btn"
                 onClick={() => setShowVideo(false)}
@@ -195,16 +263,44 @@ export default function ProductDetail() {
               </button>
             </div>
           ) : (
-            // Image Gallery
             <div className="image-gallery-container">
-              {/* Main Image Display */}
-              <div className="main-image-display">
+              <div 
+                className="main-image-display"
+                onTouchStart={onTouchStart}
+                onTouchMove={onTouchMove}
+                onTouchEnd={onTouchEnd}
+              >
                 {product.images && product.images.length > 0 ? (
-                  <img 
-                    src={product.images[selectedImageIndex].url} 
-                    alt={`${product.name} - Image ${selectedImageIndex + 1}`}
-                    className="main-product-image"
-                  />
+                  <>
+                    <img 
+                      src={product.images[selectedImageIndex].url} 
+                      alt={`${product.name} - Image ${selectedImageIndex + 1}`}
+                      className="main-product-image"
+                    />
+                    
+                    {product.images.length > 1 && (
+                      <>
+                        <button 
+                          className="image-nav-btn prev-btn"
+                          onClick={goToPreviousImage}
+                          aria-label="Previous image"
+                        >
+                          ‹
+                        </button>
+                        <button 
+                          className="image-nav-btn next-btn"
+                          onClick={goToNextImage}
+                          aria-label="Next image"
+                        >
+                          ›
+                        </button>
+                        
+                        <div className="image-counter">
+                          {selectedImageIndex + 1} / {product.images.length}
+                        </div>
+                      </>
+                    )}
+                  </>
                 ) : (
                   <div className="no-image-placeholder">
                     <span className="placeholder-icon">📷</span>
@@ -213,7 +309,6 @@ export default function ProductDetail() {
                 )}
               </div>
 
-              {/* Thumbnail Gallery */}
               {product.images && product.images.length > 1 && (
                 <div className="thumbnail-gallery">
                   {product.images.map((image, index) => (
@@ -228,7 +323,6 @@ export default function ProductDetail() {
                 </div>
               )}
 
-              {/* Show 3D Model Button */}
               {product.hasModel && (
                 <button 
                   className="show-model-btn"
@@ -238,7 +332,6 @@ export default function ProductDetail() {
                 </button>
               )}
 
-              {/* Show Video Button */}
               {product.video && (
                 <button 
                   className="show-video-btn"
@@ -251,25 +344,20 @@ export default function ProductDetail() {
           )}
         </div>
 
-        {/* Product Information */}
         <div className="product-info-section">
-          {/* Category Badge */}
           {product.category && (
             <div className="product-category-tag">
               {getCategoryLabel(product.category)}
             </div>
           )}
 
-          {/* Product Name */}
           <h1 className="product-title">{product.name}</h1>
 
-          {/* Price */}
           <div className="product-price-section">
             <span className="product-price-label">Price:</span>
             <span className="product-price-value">{formatPrice(product.price)}</span>
           </div>
 
-          {/* Description */}
           {product.description && (
             <div className="product-description-section">
               <h3>Description</h3>
@@ -277,7 +365,6 @@ export default function ProductDetail() {
             </div>
           )}
 
-          {/* Product Details */}
           <div className="product-details-grid">
             <div className="detail-item">
               <span className="detail-label">Product ID:</span>
@@ -311,12 +398,9 @@ export default function ProductDetail() {
             )}
           </div>
 
-          {/* Action Buttons */}
           <div className="product-actions">
-            <button className="btn-primary" onClick={() => {
-              window.location.href = `mailto:your-email@example.com?subject=Order Inquiry: ${product.name}&body=I'm interested in ordering ${product.name} (ID: ${product.id})`;
-            }}>
-              <span>📧</span> Contact for Order
+            <button className="btn-primary whatsapp-order-btn" onClick={handleWhatsAppOrder}>
+              <span>💬</span> Order via WhatsApp
             </button>
             {product.hasModel && (
               <button 

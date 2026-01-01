@@ -123,8 +123,9 @@ export default function ManageProducts() {
         const matchesCategory = p.category?.toLowerCase().includes(query);
         const matchesSubCategory = p.subCategory?.toLowerCase().includes(query);
         const matchesPrice = p.price?.toString().includes(query);
+        const matchesProductId = p.id?.toString().includes(query);
         
-        return matchesName || matchesCategory || matchesSubCategory || matchesPrice;
+        return matchesName || matchesCategory || matchesSubCategory || matchesPrice || matchesProductId;
       });
     }
 

@@ -87,13 +87,15 @@ export default function ProductCard({
           </div>
         )}
 
-        {/* Image Count Badge */}
+        {/* Image Count Badge 
         {productData.images && productData.images.length > 1 && (
           <div className="image-count-badge">
             📸 {productData.images.length}
           </div>
         )}
+        */}
       </div>
+      
 
       {/* Product Info */}
       <div className="product-info">
