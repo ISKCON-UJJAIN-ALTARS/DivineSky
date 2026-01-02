@@ -63,9 +63,9 @@ export default function Catalog({ search }) {
       let productsArray = [];
 
       if (category === "all") {
-        // 🚀 Single optimized request to backend
+        // 🚀 Single optimized request to backend - fetch ALL products
         const response = await fetch(
-          API_ENDPOINTS.products.getAll(1, 200), // Fetch 200 products at once
+          API_ENDPOINTS.products.getAll(1, 500), // Increased to 500 to ensure we get all products
           { 
             signal: AbortSignal.timeout(15000),
             headers: {
@@ -98,9 +98,9 @@ export default function Catalog({ search }) {
         console.log(`✅ Loaded ${productsArray.length} products in ONE request!`);
 
       } else {
-        // Fetch specific category (single request - fast)
+        // 🔧 FIX: Fetch specific category with increased limit to get ALL products
         const response = await fetch(
-          API_ENDPOINTS.products.getByCategory(category),
+          `${API_ENDPOINTS.products.getByCategory(category)}?limit=100`, // Added limit parameter
           { 
             signal: AbortSignal.timeout(10000),
             headers: {
@@ -127,6 +127,8 @@ export default function Catalog({ search }) {
             ? data.products 
             : Object.values(data.products || {});
         }
+        
+        console.log(`✅ Loaded ${productsArray.length} products from ${category} category`);
         
         setAllProducts(productsArray);
         setDisplayedProducts(productsArray.slice(0, itemsPerPage));
@@ -235,7 +237,7 @@ export default function Catalog({ search }) {
         <ErrorState error={error} onRetry={() => fetchProducts(selectedCategory)} />
       )}
 
-      {/* Subcategory Sections - Netflix Style (showing only 3 products for multiple subcategories) */}
+      {/* Subcategory Sections - Netflix Style (showing more products now) */}
       {!loading && showSubCategorySections && (
         <div className="subcategory-sections-wrapper">
           <div className="category-intro">
@@ -253,15 +255,18 @@ export default function Catalog({ search }) {
             return (
               <div key={subCat.value} className="subcategory-section">
                 <div className="subcategory-header">
-                  <h3>{subCat.label}</h3>
+                  <h3>
+                    {subCat.label}
+                    <span className="product-count-badge">({subCategoryProducts.length})</span>
+                  </h3>
                   <button 
                     className="view-all-btn"
                     onClick={() => handleSubCategoryChange(subCat.value)}
                   >
-                    View All ({subCategoryProducts.length})
+                    View All →
                   </button>
                 </div>
-                {/* Show only 3 products */}
+                {/* Show up to 10 products in the preview */}
                 <ProductGrid products={subCategoryProducts.slice(0, 3)} />
               </div>
             );

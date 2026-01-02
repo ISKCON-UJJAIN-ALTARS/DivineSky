@@ -10,11 +10,12 @@ export default function SubCategorySection({
   const [scrollPositions, setScrollPositions] = useState({});
   const scrollRefs = useRef({});
 
-  // Get products for a specific subcategory (limit to 10)
+  // Get products for a specific subcategory
+  // Show up to 20 products in the carousel (increased from 10)
   const getSubCategoryProducts = (subCategoryValue) => {
     return products
       .filter(p => p.subCategory === subCategoryValue)
-      .slice(0, 10);
+      .slice(0, 20); // Increased limit to show more products
   };
 
   // Scroll handler for horizontal scroll
@@ -72,7 +73,10 @@ export default function SubCategorySection({
           return (
             <div key={sub.value} className="subcategory-row">
               <div className="subcategory-row-header">
-                <h3 className="subcategory-row-title">{sub.label}</h3>
+                <h3 className="subcategory-row-title">
+                  {sub.label}
+                  <span className="product-count">({subProducts.length})</span>
+                </h3>
                 <button
                   className={`view-all-link ${selectedSubCategory === sub.value ? 'active' : ''}`}
                   onClick={() => onSubCategoryChange(sub.value)}

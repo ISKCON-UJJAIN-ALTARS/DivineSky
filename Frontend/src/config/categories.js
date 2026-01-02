@@ -39,7 +39,7 @@ export const CATEGORIES = [
       { value: "guru-parampara", label: "Guru Parampara" },
       { value: "gn-deity", label: "Gaur Nitai Deity" },
       { value: "haridas", label: "Srila Haridas Thakur Deity" },
-      { value: "yashoda-damodara", label: "Yashoda Damodara" },
+      { value: "yashoda-damodara", label: "Krishna & Ram Deities" },
       { value: "custom-deity", label: "Other Deity" },    
     ]
   },
@@ -56,7 +56,11 @@ export const CATEGORIES = [
     value: "Laser_Engravings", 
     label: "Laser Engravings",
     subCategories: [
-      { value: "laser-engravings", label: "Laser Engravings" },
+      { value: "mahamantra-bangla", label: "Mahamantra (Bangla)" },
+      { value: "mahamantra-hindi", label: "Mahamantra (Hindi)" },
+      { value: "mahamantra-english", label: "Mahamantra (English)" },
+      { value: "sp-quote", label: "Prabhupada Quote" },
+      { value: "others", label: "Others" },
     ]
   },
   {

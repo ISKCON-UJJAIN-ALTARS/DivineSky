@@ -24,10 +24,10 @@ export default function ManageProducts() {
       // Get all category values (excluding "all")
       const categoryValues = getCategoryValues();
       
-      // Fetch all categories in parallel
+      // Fetch all categories in parallel with increased limit
       const results = await Promise.allSettled(
         categoryValues.map(category =>
-          fetch(API_ENDPOINTS.products.getByCategory(category))
+          fetch(`${API_ENDPOINTS.products.getByCategory(category)}?limit=100`)
             .then(res => {
               if (!res.ok) throw new Error(`Failed to fetch ${category}`);
               return res.json();
