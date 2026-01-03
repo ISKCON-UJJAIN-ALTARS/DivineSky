@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import HeroSection from "../components/HeroSection";
 import CategoryGallery from "../components/Category_Gallery_Components/CategoryGallery";
 import "../styles/Landingpage.css";
+import GallerySection from "../components/GallerySection";
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -71,6 +72,7 @@ const LandingPage = () => {
         categories={categories} 
         onCategoryClick={handleCategoryClick} 
       />
+      <GallerySection />
     </>
   );
 };
