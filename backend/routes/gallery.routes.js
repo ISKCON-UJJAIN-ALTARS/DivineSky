@@ -1,6 +1,6 @@
 const express = require("express");
 const { getJsonFromR2, uploadToR2, deleteFromR2 } = require("../services/r2.service");
-const { authenticateAdmin } = require("../middleware/auth");
+const authenticateAdmin = require("../middleware/auth");
 const multer = require("multer");
 const { v4: uuidv4 } = require("uuid");
 
