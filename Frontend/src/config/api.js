@@ -44,6 +44,16 @@ export const API_ENDPOINTS = {
     update: (id) => `${API_BASE_URL}/api/testimonials/${id}`,
     delete: (id) => `${API_BASE_URL}/api/testimonials/${id}`,
   },
+
+  // Gallery
+gallery: {
+  getAll: () => `${API_BASE_URL}/api/gallery`,
+  upload: () => `${API_BASE_URL}/api/gallery/upload`,
+  delete: (section, id) => `${API_BASE_URL}/api/gallery/${section}/${id}`,
+  update: (section, id) => `${API_BASE_URL}/api/gallery/${section}/${id}`,
+},
+
+
 };
 
 // Export base URL for direct use if needed

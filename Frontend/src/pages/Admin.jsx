@@ -75,6 +75,20 @@ export default function Admin() {
                 </p>
                 <div className="card-arrow">→</div>
               </div>
+
+             {/*Manage Gallery Card */}
+              <div 
+                className="dashboard-card"
+                onClick={() => navigate("/admin/gallery")}
+              >
+                <div className="card-icon">🖼️</div>
+                <h3 className="card-title">Manage Gallery</h3>
+                <p className="card-description">
+                  Add and manage gallery images
+                </p>
+                <div className="card-arrow">→</div>
+              </div>
+
             </div>
           </div>
         )}

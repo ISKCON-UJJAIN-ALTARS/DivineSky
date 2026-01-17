@@ -19,6 +19,8 @@ import EditProduct from "./components/Admin_Components/EditProduct.jsx";
 import ReadyStock from "./components/Admin_Components/ReadyStock.jsx";
 import ManageTestimonials from "./components/Admin_Components/ManageTestimonials";
 
+import Gallery from "./components/Gallery";
+import ManageGallery from "./components/Admin_Components/ManageGallery.jsx";
 
 export default function App() {
   const [search, setSearch] = useState("");
@@ -138,6 +140,16 @@ export default function App() {
           <Footer /> 
       </>
       } />
+       <Route path="/gallery" element={ 
+        <>  
+        <Navbar search={search} setSearch={setSearch} />
+            {search === "" && <> <Gallery /> <Footer /> </>}
+            {search !== "" && <Catalog search={search} />}
+       </>   
+       } />
+
+       <Route path="/admin/gallery" element={<ManageGallery />} />
+
     </Routes>
   );
 }
