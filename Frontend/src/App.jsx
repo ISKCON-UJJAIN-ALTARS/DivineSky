@@ -1,5 +1,6 @@
 import { Routes, Route } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { Analytics } from "@vercel/analytics/react";
 
 import Navbar from "./components/Navbar";
 import Contact from "./components/Contact";
@@ -47,7 +48,8 @@ export default function App() {
   }
 
   return (
-    <Routes>
+    <>
+      <Routes>
       {/* Public Routes */}
       <Route path="/" element={
        <>
@@ -151,5 +153,7 @@ export default function App() {
        <Route path="/admin/gallery" element={<ManageGallery />} />
 
     </Routes>
+    <Analytics />
+  </>
   );
 }
