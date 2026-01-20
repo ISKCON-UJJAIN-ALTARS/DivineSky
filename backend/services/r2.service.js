@@ -1,4 +1,4 @@
-// services/r2.service.js - UNIFIED VERSION
+// services/r2.service.js - UNIFIED VERSION WITH DEBUGGING
 const {
   S3Client,
   PutObjectCommand,
@@ -24,28 +24,48 @@ console.log("Bucket:", process.env.R2_BUCKET_NAME);
 console.log("Public URL:", process.env.R2_PUBLIC_URL);
 
 /**
- * Upload file to R2 (GLB, images, etc.)
+ * Upload file to R2 (GLB, images, JSON, etc.)
  */
 async function uploadToR2(file, category) {
   try {
     console.log("📤 Starting R2 upload...");
-    console.log("File:", file.originalname);
-    console.log("Size:", file.size);
+    console.log("📋 File object received:", {
+      hasOriginalname: !!file.originalname,
+      hasBuffer: !!file.buffer,
+      hasMimetype: !!file.mimetype,
+      hasSize: !!file.size,
+      originalname: file.originalname,
+      size: file.size,
+      mimetype: file.mimetype,
+      bufferType: file.buffer ? typeof file.buffer : 'undefined',
+      bufferLength: file.buffer ? file.buffer.length : 0
+    });
     console.log("Category:", category);
+
+    // Validate required fields
+    if (!file.originalname) {
+      throw new Error("file.originalname is required but was undefined");
+    }
+    if (!file.buffer) {
+      throw new Error("file.buffer is required but was undefined");
+    }
 
     // Generate unique filename
     const fileExtension = path.extname(file.originalname);
-    const uniqueFilename = `${uuidv4()}${fileExtension}`;
-    const key = `products/${category}/${uniqueFilename}`;
+    console.log("📝 File extension extracted:", fileExtension);
 
-    console.log("Key:", key);
+    const uniqueFilename = `${uuidv4()}${fileExtension}`;
+    console.log("📝 Unique filename generated:", uniqueFilename);
+
+    const key = `${category}/${uniqueFilename}`;
+    console.log("🔑 R2 Key:", key);
 
     const command = new PutObjectCommand({
       Bucket: process.env.R2_BUCKET_NAME,
       Key: key,
       Body: file.buffer,
-      ContentType: file.mimetype,
-      ContentLength: file.size,
+      ContentType: file.mimetype || "application/octet-stream",
+      ContentLength: file.size || file.buffer.length,
       Metadata: {
         originalName: file.originalname,
         category: category,
@@ -53,22 +73,34 @@ async function uploadToR2(file, category) {
       },
     });
 
-    await r2Client.send(command);
-    console.log("✅ File uploaded to R2");
+    console.log("📤 Sending upload command to R2...");
+    const result = await r2Client.send(command);
+    console.log("✅ File uploaded to R2 successfully");
+    console.log("📊 Upload result:", {
+      ETag: result.ETag,
+      VersionId: result.VersionId
+    });
 
     const publicUrl = `${process.env.R2_PUBLIC_URL}/${key}`;
-    console.log("Public URL:", publicUrl);
+    console.log("🌐 Public URL:", publicUrl);
 
     return {
       url: publicUrl,
       key: key,
-      size: file.size,
+      size: file.size || file.buffer.length,
       mimetype: file.mimetype,
       originalName: file.originalname,
     };
   } catch (error) {
     console.error("❌ R2 Upload Error:", error);
-    console.error("Error details:", error.message);
+    console.error("Error name:", error.name);
+    console.error("Error message:", error.message);
+    console.error("Error stack:", error.stack);
+    console.error("File object at error:", {
+      originalname: file?.originalname,
+      hasBuffer: !!file?.buffer,
+      mimetype: file?.mimetype
+    });
     throw new Error(`Failed to upload file: ${error.message}`);
   }
 }
@@ -93,7 +125,7 @@ async function getJsonFromR2(key) {
 
     const parsed = JSON.parse(bodyString);
     console.log("✅ JSON parsed successfully");
-    console.log("Products count:", Object.keys(parsed.products || {}).length);
+    console.log("Products count:", Object.keys(parsed.products || parsed.testimonials || {}).length);
     
     return parsed;
   } catch (error) {
@@ -121,7 +153,7 @@ async function getJsonFromR2(key) {
 async function putJsonToR2(key, data) {
   try {
     console.log("💾 Saving JSON to R2:", key);
-    console.log("Products count:", Object.keys(data.products || {}).length);
+    console.log("Products count:", Object.keys(data.products || data.testimonials || {}).length);
 
     const jsonString = JSON.stringify(data, null, 2);
     console.log("JSON size:", jsonString.length, "bytes");
@@ -188,8 +220,6 @@ function streamToString(stream) {
     stream.on("end", () => resolve(Buffer.concat(chunks).toString("utf-8")));
   });
 }
-
-
 
 module.exports = {
   uploadToR2,

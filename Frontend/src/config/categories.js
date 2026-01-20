@@ -43,6 +43,7 @@ export const CATEGORIES = [
       { value: "gn-deity", label: "Gaur Nitai Deity" },
       { value: "haridas", label: "Srila Haridas Thakur Deity" },
       { value: "yashoda-damodara", label: "Krishna & Ram Deities" },
+      { value: "lotus_feets", label: "Paduka & Stand" },
       { value: "custom-deity", label: "Other Deity" },    
     ]
   },
@@ -87,8 +88,11 @@ export const CATEGORIES = [
     label: "Spiritual Furniture",
     subCategories: [
       { value: "reception-table", label: "Reception Table" },
+      { value: "donation-box", label: "Donation Box & Jhula" },
       { value: "doors", label: "Temple Doors" },
       { value: "bookshelf", label: "Bookshelf" },
+      { value: "bhog_table", label: "Bhog Table & Partions" },
+      { value: "others", label: "Others Wooden Items" },
     ]
   },
 ];
