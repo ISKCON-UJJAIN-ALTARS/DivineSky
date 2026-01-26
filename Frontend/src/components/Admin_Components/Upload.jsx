@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { CATEGORIES_OBJECT } from "../../config/categories";
+import { ALTAR_SPECIFICATIONS } from "../../config/altarSpecifications";
 import { API_ENDPOINTS } from "../../config/api";
 import "../../styles/Admin/Upload.css";
 
@@ -16,6 +17,10 @@ export default function Upload() {
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("altars");
   const [subCategory, setSubCategory] = useState("");
+
+  // Altar-specific specifications
+  const [altarSize, setAltarSize] = useState("");
+  const [altarDesign, setAltarDesign] = useState("");
 
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState("");
@@ -108,6 +113,12 @@ export default function Upload() {
     const newCategory = e.target.value;
     setCategory(newCategory);
     setSubCategory(""); // Reset subcategory when category changes
+    
+    // Reset altar specifications when changing away from altars
+    if (newCategory !== "altars") {
+      setAltarSize("");
+      setAltarDesign("");
+    }
   };
 
   const uploadProduct = () => {
@@ -134,6 +145,18 @@ export default function Upload() {
       return;
     }
 
+    // Validate altar specifications if category is altars
+    if (category === "altars") {
+      if (!altarSize) {
+        alert("Please select an altar size");
+        return;
+      }
+      if (!altarDesign) {
+        alert("Please select an altar design");
+        return;
+      }
+    }
+
     const formData = new FormData();
     
     // Add model if checkbox is checked
@@ -158,9 +181,19 @@ export default function Upload() {
     formData.append("subCategory", subCategory);
     formData.append("includeModel", includeModel);
 
+    // Add altar specifications if category is altars
+    if (category === "altars") {
+      formData.append("altarSize", altarSize);
+      formData.append("altarDesign", altarDesign);
+    }
+
     console.log("📤 Uploading product...");
     console.log("Category:", category);
     console.log("SubCategory:", subCategory);
+    if (category === "altars") {
+      console.log("Altar Size:", altarSize);
+      console.log("Altar Design:", altarDesign);
+    }
     console.log("Model:", includeModel ? (model ? model.name : "No model") : "Model not included");
     console.log("Images:", images.length);
     console.log("Video:", video ? video.name : "No video");
@@ -227,6 +260,8 @@ export default function Upload() {
     setDescription("");
     setCategory("altars");
     setSubCategory("");
+    setAltarSize("");
+    setAltarDesign("");
     setProgress(0);
     setStatus("");
   };
@@ -434,6 +469,55 @@ export default function Upload() {
                   </option>
                 ))}
               </select>
+            </div>
+          )}
+
+          {/* ALTAR SPECIFICATIONS (CONDITIONAL) */}
+          {category === "altars" && (
+            <div className="altar-specifications-section">
+              <h3 className="altar-specifications-title">
+               Altar Specifications
+              </h3>
+              
+              {/* Altar Size */}
+              <div className="altar-spec-group form-group">
+                <label className="label">
+                  {ALTAR_SPECIFICATIONS.size.label} *
+                </label>
+                <select
+                  value={altarSize}
+                  onChange={(e) => setAltarSize(e.target.value)}
+                  className="form-select altar-spec-select"
+                  disabled={isUploading}
+                >
+                  <option value="">-- Select Size --</option>
+                  {ALTAR_SPECIFICATIONS.size.options.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Altar Design */}
+              <div className="altar-spec-group form-group">
+                <label className="label">
+                  {ALTAR_SPECIFICATIONS.design.label} *
+                </label>
+                <select
+                  value={altarDesign}
+                  onChange={(e) => setAltarDesign(e.target.value)}
+                  className="form-select altar-spec-select"
+                  disabled={isUploading}
+                >
+                  <option value="">-- Select Design --</option>
+                  {ALTAR_SPECIFICATIONS.design.options.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           )}
 

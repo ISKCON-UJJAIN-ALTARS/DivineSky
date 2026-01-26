@@ -12,8 +12,8 @@ const router = express.Router();
 
 /**
  * 🔐 POST /admin/upload
- * Upload product with optional GLB model, 1-5 images, optional video, and subcategory
- * ✅ UPDATED: Now supports subcategories
+ * Upload product with optional GLB model, 1-5 images, optional video, subcategory, and altar specifications
+ * ✅ UPDATED: Now supports subcategories and altar specifications
  */
 router.post(
   "/upload",
@@ -32,8 +32,10 @@ router.post(
         price, 
         description, 
         category, 
-        subCategory,  // ✅ NEW: Subcategory field
-        includeModel 
+        subCategory,
+        includeModel,
+        altarSize,      // ✅ NEW: Altar size
+        altarDesign     // ✅ NEW: Altar design
       } = req.body;
       
       const modelFile = req.files?.model?.[0];
@@ -66,6 +68,16 @@ router.post(
           success: false,
           message: `Invalid category. Must be one of: ${validCategories.join(", ")}`,
         });
+      }
+
+      // ✅ NEW: Validate altar specifications if category is altars
+      if (category === "altars") {
+        if (!altarSize || !altarDesign) {
+          return res.status(400).json({
+            success: false,
+            message: "Altar size and design are required for altar products",
+          });
+        }
       }
 
       // Validate price
@@ -129,12 +141,18 @@ router.post(
         price: parsedPrice,
         description: description?.trim() || "",
         category,
-        subCategory: subCategory || null,  // ✅ NEW: Store subcategory
+        subCategory: subCategory || null,
         images: imageResults,
-        hasModel: !!modelResult,  // ✅ Add hasModel flag
+        hasModel: !!modelResult,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
+
+      // ✅ NEW: Add altar specifications if category is altars
+      if (category === "altars") {
+        productData.altarSize = altarSize;
+        productData.altarDesign = altarDesign;
+      }
 
       // Add model data if it was uploaded
       if (modelResult) {
@@ -162,6 +180,10 @@ router.post(
       console.log("✅ Product uploaded successfully:", productId);
       console.log("   Category:", category);
       console.log("   SubCategory:", subCategory || "None");
+      if (category === "altars") {
+        console.log("   Altar Size:", altarSize);
+        console.log("   Altar Design:", altarDesign);
+      }
 
       res.status(201).json({
         success: true,
@@ -177,6 +199,329 @@ router.post(
     }
   }
 );
+
+/**
+ * 🔐 PUT /admin/products/:category/:id
+ * Update product (supports category change, subcategory, and altar specifications)
+ * ✅ UPDATED: Now supports altar specifications
+ */
+router.put(
+  "/products/:category/:id",
+  auth,
+  upload.fields([
+    { name: "model", maxCount: 1 },
+    { name: "images", maxCount: 10 },
+    { name: "video", maxCount: 1 },
+  ]),
+  async (req, res) => {
+    try {
+      const { category, id } = req.params;
+      const {
+        name,
+        price,
+        description,
+        subCategory,
+        newCategory,
+        replaceImages,
+        includeModel,
+        removeModel,
+        removeVideo,
+        inReadyStock,
+        readyStockQuantity,
+        altarSize,      // ✅ NEW: Altar size
+        altarDesign     // ✅ NEW: Altar design
+      } = req.body;
+
+      console.log("📝 Update request:", { category, id, newCategory, altarSize, altarDesign });
+
+      const modelFile = req.files?.model?.[0];
+      const imageFiles = req.files?.images || [];
+      const videoFile = req.files?.video?.[0];
+
+      // Determine which category to work with
+      const targetCategory = newCategory || category;
+      const isCategoryChange = newCategory && newCategory !== category;
+
+      // ✅ NEW: Validate altar specifications if target category is altars
+      if (targetCategory === "altars") {
+        if (!altarSize || !altarDesign) {
+          return res.status(400).json({
+            success: false,
+            message: "Altar size and design are required for altar products",
+          });
+        }
+      }
+
+      // Load source category JSON
+      const sourceJsonKey = `products/${category}.json`;
+      let sourceData = await getJsonFromR2(sourceJsonKey);
+
+      if (!sourceData || !sourceData.products[id]) {
+        return res.status(404).json({
+          success: false,
+          message: "Product not found",
+        });
+      }
+
+      let product = sourceData.products[id];
+
+      // Update basic fields
+      if (name) product.name = name.trim();
+      if (price !== undefined) product.price = parseFloat(price);
+      if (description !== undefined) product.description = description.trim();
+      if (subCategory !== undefined) product.subCategory = subCategory || null;
+
+      // ✅ NEW: Update altar specifications
+      if (targetCategory === "altars") {
+        product.altarSize = altarSize;
+        product.altarDesign = altarDesign;
+      } else {
+        // Remove altar specifications if moving away from altars category
+        delete product.altarSize;
+        delete product.altarDesign;
+      }
+
+      // Handle model removal
+      if (removeModel === "true") {
+        if (product.model) {
+          await deleteFromR2(product.model);
+          delete product.model;
+          delete product.modelSize;
+          delete product.modelType;
+          product.hasModel = false;
+        }
+      }
+
+      // Handle model upload
+      if (includeModel === "true" && modelFile) {
+        if (product.model) {
+          await deleteFromR2(product.model);
+        }
+        const modelResult = await uploadToR2(modelFile, targetCategory);
+        product.model = modelResult.url;
+        product.modelSize = modelResult.size;
+        product.modelType = modelResult.mimetype;
+        product.hasModel = true;
+      }
+
+      // Handle video removal
+      if (removeVideo === "true") {
+        if (product.video) {
+          await deleteFromR2(product.video);
+          delete product.video;
+          delete product.videoSize;
+          delete product.videoType;
+        }
+      }
+
+      // Handle video upload
+      if (videoFile) {
+        if (product.video) {
+          await deleteFromR2(product.video);
+        }
+        const videoResult = await uploadToR2(videoFile, targetCategory);
+        product.video = videoResult.url;
+        product.videoSize = videoResult.size;
+        product.videoType = videoResult.mimetype;
+      }
+
+      // Handle images
+      if (imageFiles.length > 0) {
+        if (replaceImages === "true") {
+          // Delete old images
+          for (const img of product.images) {
+            await deleteFromR2(img.url);
+          }
+          product.images = [];
+        }
+
+        // Upload new images
+        for (const imageFile of imageFiles) {
+          const result = await uploadToR2(imageFile, targetCategory);
+          product.images.push({
+            url: result.url,
+            size: result.size,
+            mimetype: result.mimetype,
+          });
+        }
+      }
+
+      // Update ready stock
+      let readyStockData = null;
+      if (inReadyStock === "true") {
+        const qty = parseInt(readyStockQuantity) || 0;
+        if (qty > 0) {
+          readyStockData = {
+            inStock: true,
+            quantity: qty,
+            lastUpdated: new Date().toISOString(),
+          };
+
+          const readyStockKey = `ready_stock/${targetCategory}.json`;
+          let stockData = await getJsonFromR2(readyStockKey);
+          if (!stockData) {
+            stockData = { category: targetCategory, products: {} };
+          }
+          stockData.products[id] = {
+            productId: id,
+            quantity: qty,
+            addedAt: new Date().toISOString(),
+          };
+          await putJsonToR2(readyStockKey, stockData);
+        }
+      } else {
+        const readyStockKey = `ready_stock/${targetCategory}.json`;
+        let stockData = await getJsonFromR2(readyStockKey);
+        if (stockData?.products?.[id]) {
+          delete stockData.products[id];
+          await putJsonToR2(readyStockKey, stockData);
+        }
+      }
+
+      product.updated_at = new Date().toISOString();
+
+      // Handle category change
+      if (isCategoryChange) {
+        product.category = targetCategory;
+
+        const targetJsonKey = `products/${targetCategory}.json`;
+        let targetData = await getJsonFromR2(targetJsonKey);
+
+        if (!targetData) {
+          targetData = {
+            category: targetCategory,
+            last_updated: null,
+            total_products: 0,
+            products: {},
+          };
+        }
+
+        targetData.products[id] = product;
+        targetData.last_updated = new Date().toISOString();
+        targetData.total_products = Object.keys(targetData.products).length;
+
+        delete sourceData.products[id];
+        sourceData.last_updated = new Date().toISOString();
+        sourceData.total_products = Object.keys(sourceData.products).length;
+
+        await putJsonToR2(targetJsonKey, targetData);
+        await putJsonToR2(sourceJsonKey, sourceData);
+
+        console.log(`✅ Product moved from ${category} to ${targetCategory}`);
+      } else {
+        sourceData.products[id] = product;
+        sourceData.last_updated = new Date().toISOString();
+        await putJsonToR2(sourceJsonKey, sourceData);
+      }
+
+      res.json({
+        success: true,
+        message: "Product updated successfully",
+        product,
+        readyStock: readyStockData,
+        newCategory: isCategoryChange ? targetCategory : null,
+      });
+    } catch (err) {
+      console.error("❌ Update error:", err);
+      res.status(500).json({
+        success: false,
+        message: err.message || "Failed to update product",
+      });
+    }
+  }
+);
+
+/**
+ * 🔐 GET /admin/products/:category/:id
+ * Get single product with ready stock info
+ */
+router.get("/products/:category/:id", auth, async (req, res) => {
+  try {
+    const { category, id } = req.params;
+
+    const jsonKey = `products/${category}.json`;
+    const data = await getJsonFromR2(jsonKey);
+
+    if (!data || !data.products[id]) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found",
+      });
+    }
+
+    const product = data.products[id];
+
+    const readyStockKey = `ready_stock/${category}.json`;
+    const stockData = await getJsonFromR2(readyStockKey);
+    const stockInfo = stockData?.products?.[id];
+
+    res.json({
+      success: true,
+      product,
+      readyStock: {
+        inReadyStock: !!stockInfo,
+        quantity: stockInfo?.quantity || 0,
+      },
+    });
+  } catch (err) {
+    console.error("❌ Get product error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch product",
+    });
+  }
+});
+
+/**
+ * 🔐 PATCH /admin/products/:category/:id/images
+ * Remove a specific image from product
+ */
+router.patch("/products/:category/:id/images", auth, async (req, res) => {
+  try {
+    const { category, id } = req.params;
+    const { imageIndex } = req.body;
+
+    const jsonKey = `products/${category}.json`;
+    const data = await getJsonFromR2(jsonKey);
+
+    if (!data || !data.products[id]) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found",
+      });
+    }
+
+    const product = data.products[id];
+
+    if (!product.images[imageIndex]) {
+      return res.status(400).json({
+        success: false,
+        message: "Image not found",
+      });
+    }
+
+    await deleteFromR2(product.images[imageIndex].url);
+    product.images.splice(imageIndex, 1);
+    product.updated_at = new Date().toISOString();
+
+    data.products[id] = product;
+    data.last_updated = new Date().toISOString();
+
+    await putJsonToR2(jsonKey, data);
+
+    res.json({
+      success: true,
+      message: "Image removed successfully",
+      product,
+    });
+  } catch (err) {
+    console.error("❌ Remove image error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Failed to remove image",
+    });
+  }
+});
 
 /**
  * 🔐 DELETE /admin/products/:category/:id
@@ -216,6 +561,14 @@ router.delete("/products/:category/:id", auth, async (req, res) => {
       for (const image of product.images) {
         await deleteFromR2(image.url);
       }
+    }
+
+    // Remove from ready stock if exists
+    const readyStockKey = `ready_stock/${category}.json`;
+    const stockData = await getJsonFromR2(readyStockKey);
+    if (stockData?.products?.[id]) {
+      delete stockData.products[id];
+      await putJsonToR2(readyStockKey, stockData);
     }
 
     // Remove product

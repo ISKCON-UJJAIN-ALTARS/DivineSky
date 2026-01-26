@@ -134,7 +134,10 @@ export default function ManageProducts() {
         const matchesSubCategory = p.subCategory?.toLowerCase().includes(query);
         const matchesPrice = p.price?.toString().includes(query);
         const matchesProductId = p.id?.toString().includes(query);
-        return matchesName || matchesCategory || matchesSubCategory || matchesPrice || matchesProductId;
+        // Search in altar specifications
+        const matchesAltarSize = p.altarSize?.toLowerCase().includes(query);
+        const matchesAltarDesign = p.altarDesign?.toLowerCase().includes(query);
+        return matchesName || matchesCategory || matchesSubCategory || matchesPrice || matchesProductId || matchesAltarSize || matchesAltarDesign;
       });
     }
 
@@ -218,7 +221,7 @@ export default function ManageProducts() {
             <span className="search-icon">🔍</span>
             <input
               type="text"
-              placeholder="Search by name, category, subcategory, or price..."
+              placeholder="Search by name, category, subcategory, specifications, or price..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="search-input"
@@ -291,6 +294,7 @@ export default function ManageProducts() {
                   <th>Name</th>
                   <th>Category</th>
                   <th>Subcategory</th>
+                  <th>Specifications</th>
                   <th>Price</th>
                   <th className="text-center">Images</th>
                   <th className="text-center">Video</th>
@@ -336,6 +340,24 @@ export default function ManageProducts() {
                     <td>
                       {product.subCategory ? (
                         <span className="subcategory-badge">{product.subCategory}</span>
+                      ) : (
+                        <span className="no-data">—</span>
+                      )}
+                    </td>
+                    <td>
+                      {product.category === "altars" && (product.altarSize || product.altarDesign) ? (
+                        <div className="specs-cell">
+                          {product.altarSize && (
+                            <div className="spec-item-inline">
+                              <strong>Size:</strong> {product.altarSize}
+                            </div>
+                          )}
+                          {product.altarDesign && (
+                            <div className="spec-item-inline">
+                              <strong>Design:</strong> {product.altarDesign}
+                            </div>
+                          )}
+                        </div>
                       ) : (
                         <span className="no-data">—</span>
                       )}

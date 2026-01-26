@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { CATEGORIES_OBJECT, getCategoryLabel, getSubCategoryLabel } from "../../config/categories";
+import { ALTAR_SPECIFICATIONS } from "../../config/altarSpecifications";
 import { API_ENDPOINTS } from "../../config/api";
 import "../../styles/Admin/EditProduct.css";
 
@@ -19,6 +20,10 @@ export default function EditProduct() {
   const [description, setDescription] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(category);
   const [subCategory, setSubCategory] = useState("");
+  
+  // Altar specifications
+  const [altarSize, setAltarSize] = useState("");
+  const [altarDesign, setAltarDesign] = useState("");
   
   // Ready Stock states
   const [inReadyStock, setInReadyStock] = useState(false);
@@ -60,6 +65,10 @@ export default function EditProduct() {
         setDescription(p.description || "");
         setSelectedCategory(p.category || category);
         setSubCategory(p.subCategory || "");
+        
+        // Set altar specifications if available
+        setAltarSize(p.altarSize || "");
+        setAltarDesign(p.altarDesign || "");
         
         // Set Ready Stock info
         if (data.readyStock) {
@@ -274,6 +283,18 @@ export default function EditProduct() {
       return;
     }
 
+    // Validate altar specifications if category is altars
+    if (selectedCategory === "altars") {
+      if (!altarSize) {
+        setMessage({ type: "error", text: "Please select an altar size" });
+        return;
+      }
+      if (!altarDesign) {
+        setMessage({ type: "error", text: "Please select an altar design" });
+        return;
+      }
+    }
+
     // Confirm category change
     const isChangingCategory = selectedCategory !== category;
     if (isChangingCategory) {
@@ -295,6 +316,12 @@ export default function EditProduct() {
       formData.append("price", price);
       formData.append("description", description.trim());
       formData.append("subCategory", subCategory);
+      
+      // Altar specifications if category is altars
+      if (selectedCategory === "altars") {
+        formData.append("altarSize", altarSize);
+        formData.append("altarDesign", altarDesign);
+      }
       
       // Ready Stock fields
       formData.append("inReadyStock", inReadyStock ? "true" : "false");
@@ -431,6 +458,25 @@ export default function EditProduct() {
               </div>
             )}
           </div>
+
+          {/* Display current altar specifications if available */}
+          {product.category === "altars" && (product.altarSize || product.altarDesign) && (
+            <div className="info-block">
+              <label>Current Altar Specifications</label>
+              <div className="current-altar-specs">
+                {product.altarSize && (
+                  <div className="spec-item">
+                    <strong>Size:</strong> {product.altarSize}
+                  </div>
+                )}
+                {product.altarDesign && (
+                  <div className="spec-item">
+                    <strong>Design:</strong> {product.altarDesign}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
           
           <div className="info-block">
             <label>Current Images ({product.images?.length || 0})</label>
@@ -497,8 +543,14 @@ export default function EditProduct() {
             <select
               value={selectedCategory}
               onChange={(e) => {
-                setSelectedCategory(e.target.value);
+                const newCat = e.target.value;
+                setSelectedCategory(newCat);
                 setSubCategory("");
+                // Reset altar specs when changing away from altars
+                if (newCat !== "altars") {
+                  setAltarSize("");
+                  setAltarDesign("");
+                }
               }}
               className="category-select"
             >
@@ -538,6 +590,53 @@ export default function EditProduct() {
                   Current: {getSubCategoryLabel(product.category || category, product.subCategory)}
                 </small>
               )}
+            </div>
+          )}
+
+          {/* ALTAR SPECIFICATIONS (CONDITIONAL) */}
+          {selectedCategory === "altars" && (
+            <div className="altar-specifications-section">
+              <h3 className="altar-specifications-title">
+                🕉️ Altar Specifications
+              </h3>
+              
+              {/* Altar Size */}
+              <div className="altar-spec-group form-group">
+                <label>
+                  {ALTAR_SPECIFICATIONS.size.label} *
+                </label>
+                <select
+                  value={altarSize}
+                  onChange={(e) => setAltarSize(e.target.value)}
+                  className="category-select altar-spec-select"
+                >
+                  <option value="">-- Select Size --</option>
+                  {ALTAR_SPECIFICATIONS.size.options.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Altar Design */}
+              <div className="altar-spec-group form-group">
+                <label>
+                  {ALTAR_SPECIFICATIONS.design.label} *
+                </label>
+                <select
+                  value={altarDesign}
+                  onChange={(e) => setAltarDesign(e.target.value)}
+                  className="category-select altar-spec-select"
+                >
+                  <option value="">-- Select Design --</option>
+                  {ALTAR_SPECIFICATIONS.design.options.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           )}
 

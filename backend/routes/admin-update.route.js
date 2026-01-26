@@ -12,7 +12,8 @@ const router = express.Router();
 
 /**
  * 🔐 PUT /admin/products/:category/:id
- * Update existing product - FIXED for category changes + Ready Stock support
+ * Update existing product - FIXED for category changes + Ready Stock support + Altar Specifications
+ * ✅ UPDATED: Now supports altar specifications
  */
 router.put(
   "/products/:category/:id",
@@ -35,9 +36,12 @@ router.put(
         replaceImages,
         newCategory,
         subCategory,
-        // ✨ NEW: Ready Stock fields
+        // Ready Stock fields
         inReadyStock,
-        readyStockQuantity
+        readyStockQuantity,
+        // ✅ NEW: Altar specifications
+        altarSize,
+        altarDesign
       } = req.body;
       
       console.log("=== UPDATE PRODUCT REQUEST ===");
@@ -45,10 +49,23 @@ router.put(
       console.log("Current Category:", category);
       console.log("New Category:", newCategory);
       console.log("Ready Stock:", inReadyStock, "Quantity:", readyStockQuantity);
+      console.log("Altar Size:", altarSize);
+      console.log("Altar Design:", altarDesign);
       console.log("Request body:", req.body);
 
       // Check if changing category
       const isChangingCategory = newCategory && newCategory !== category;
+      const targetCategory = isChangingCategory ? newCategory : category;
+      
+      // ✅ NEW: Validate altar specifications if target category is altars
+      if (targetCategory === "altars") {
+        if (!altarSize || !altarDesign) {
+          return res.status(400).json({
+            success: false,
+            message: "Altar size and design are required for altar products",
+          });
+        }
+      }
       
       // Load existing product data from CURRENT category
       const jsonKey = `products/${category}.json`;
@@ -98,6 +115,19 @@ router.put(
       // ✅ ALWAYS update subcategory
       existingProduct.subCategory = subCategory || null;
       console.log("Updated subcategory:", existingProduct.subCategory);
+
+      // ✅ NEW: Update altar specifications
+      if (targetCategory === "altars") {
+        existingProduct.altarSize = altarSize;
+        existingProduct.altarDesign = altarDesign;
+        console.log("Updated altar size:", existingProduct.altarSize);
+        console.log("Updated altar design:", existingProduct.altarDesign);
+      } else {
+        // Remove altar specifications if moving away from altars category
+        delete existingProduct.altarSize;
+        delete existingProduct.altarDesign;
+        console.log("Removed altar specifications (not an altar product)");
+      }
 
       // ✅ Update category field in product object
       if (isChangingCategory) {

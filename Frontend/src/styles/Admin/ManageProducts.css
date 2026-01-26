@@ -822,3 +822,47 @@
     flex-wrap: wrap;
   }
 }
+/* ================================
+   SPECIFICATIONS COLUMN
+================================ */
+.specs-cell {
+  font-size: 0.85rem;
+  max-width: 200px;
+  line-height: 1.4;
+}
+
+.spec-item-inline {
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.spec-item-inline:last-child {
+  margin-bottom: 0;
+}
+
+.spec-item-inline strong {
+  color: #d97706;
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+/* Responsive adjustments for specifications column */
+@media (max-width: 1200px) {
+  .specs-cell {
+    font-size: 0.8rem;
+    max-width: 150px;
+  }
+}
+
+@media (max-width: 768px) {
+  .specs-cell {
+    font-size: 0.75rem;
+    max-width: 120px;
+  }
+  
+  .spec-item-inline {
+    display: block;
+  }
+}

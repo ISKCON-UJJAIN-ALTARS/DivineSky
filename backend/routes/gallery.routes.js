@@ -1,5 +1,5 @@
 const express = require("express");
-const { getJsonFromR2, uploadToR2, deleteFromR2 } = require("../services/r2.service");
+const { getJsonFromR2, putJsonToR2, uploadToR2, deleteFromR2 } = require("../services/r2.service");
 const authenticateAdmin = require("../middleware/auth");
 const multer = require("multer");
 const { v4: uuidv4 } = require("uuid");
@@ -23,11 +23,8 @@ async function initializeGalleryFile() {
       last_updated: new Date().toISOString(),
     };
     
-    await uploadToR2(
-      jsonKey,
-      Buffer.from(JSON.stringify(initialData, null, 2)),
-      "application/json"
-    );
+    // ✅ FIX: Use putJsonToR2 for JSON files
+    await putJsonToR2(jsonKey, initialData);
     
     console.log("✅ Created gallery.json file in R2");
     return initialData;
@@ -72,6 +69,10 @@ router.get("/", async (req, res) => {
  */
 router.post("/upload", authenticateAdmin, upload.single("photo"), async (req, res) => {
   try {
+    console.log("📤 Gallery upload request");
+    console.log("Body:", req.body);
+    console.log("File:", req.file);
+
     const { section, caption, featured } = req.body;
 
     if (!section || !req.file) {
@@ -90,9 +91,10 @@ router.post("/upload", authenticateAdmin, upload.single("photo"), async (req, re
       });
     }
 
-    // Upload photo to R2
-    const imageKey = `gallery/${section}/${uuidv4()}.${req.file.mimetype.split("/")[1]}`;
-    const imageUrl = await uploadToR2(imageKey, req.file.buffer, req.file.mimetype);
+    console.log("📸 Uploading photo to R2...");
+    // ✅ FIX: Pass the file object directly, like products do
+    const imageResult = await uploadToR2(req.file, `gallery/${section}`);
+    console.log("✅ Photo uploaded:", imageResult.url);
 
     // Get existing gallery data
     const jsonKey = "gallery/gallery.json";
@@ -104,7 +106,7 @@ router.post("/upload", authenticateAdmin, upload.single("photo"), async (req, re
 
     const newPhoto = {
       id: `${section.toUpperCase()}-${Date.now()}`,
-      url: imageUrl,
+      url: imageResult.url,
       caption: caption || "",
       featured: featured === "true" || false,
       uploaded_at: new Date().toISOString(),
@@ -119,23 +121,23 @@ router.post("/upload", authenticateAdmin, upload.single("photo"), async (req, re
 
     data.last_updated = new Date().toISOString();
 
-    // Save back to R2
-    await uploadToR2(
-      jsonKey,
-      Buffer.from(JSON.stringify(data, null, 2)),
-      "application/json"
-    );
+    console.log("💾 Saving gallery data...");
+    // ✅ FIX: Use putJsonToR2 for JSON files
+    await putJsonToR2(jsonKey, data);
 
+    console.log("✅ Gallery photo uploaded successfully");
     res.json({
       success: true,
       message: "Photo uploaded successfully",
       photo: newPhoto,
     });
   } catch (err) {
-    console.error("Error uploading photo:", err);
+    console.error("❌ Error uploading photo:", err);
+    console.error("Error stack:", err.stack);
     res.status(500).json({
       success: false,
       message: "Failed to upload photo",
+      error: err.message
     });
   }
 });
@@ -146,6 +148,7 @@ router.post("/upload", authenticateAdmin, upload.single("photo"), async (req, re
  */
 router.delete("/:section/:id", authenticateAdmin, async (req, res) => {
   try {
+    console.log(`🗑️ Deleting gallery photo: ${req.params.section}/${req.params.id}`);
     const { section, id } = req.params;
 
     const validSections = ["hero", "guests", "workshop", "team"];
@@ -189,19 +192,16 @@ router.delete("/:section/:id", authenticateAdmin, async (req, res) => {
 
     data.last_updated = new Date().toISOString();
 
-    // Save back to R2
-    await uploadToR2(
-      jsonKey,
-      Buffer.from(JSON.stringify(data, null, 2)),
-      "application/json"
-    );
+    // ✅ FIX: Use putJsonToR2 for JSON files
+    await putJsonToR2(jsonKey, data);
 
+    console.log("✅ Gallery photo deleted successfully");
     res.json({
       success: true,
       message: "Photo deleted successfully",
     });
   } catch (err) {
-    console.error("Error deleting photo:", err);
+    console.error("❌ Error deleting photo:", err);
     res.status(500).json({
       success: false,
       message: "Failed to delete photo",
@@ -215,6 +215,7 @@ router.delete("/:section/:id", authenticateAdmin, async (req, res) => {
  */
 router.put("/:section/:id", authenticateAdmin, async (req, res) => {
   try {
+    console.log(`📝 Updating gallery photo: ${req.params.section}/${req.params.id}`);
     const { section, id } = req.params;
     const { caption } = req.body;
 
@@ -259,19 +260,16 @@ router.put("/:section/:id", authenticateAdmin, async (req, res) => {
 
     data.last_updated = new Date().toISOString();
 
-    // Save back to R2
-    await uploadToR2(
-      jsonKey,
-      Buffer.from(JSON.stringify(data, null, 2)),
-      "application/json"
-    );
+    // ✅ FIX: Use putJsonToR2 for JSON files
+    await putJsonToR2(jsonKey, data);
 
+    console.log("✅ Gallery photo updated successfully");
     res.json({
       success: true,
       message: "Photo updated successfully",
     });
   } catch (err) {
-    console.error("Error updating photo:", err);
+    console.error("❌ Error updating photo:", err);
     res.status(500).json({
       success: false,
       message: "Failed to update photo",
