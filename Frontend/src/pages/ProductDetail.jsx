@@ -84,7 +84,6 @@ export default function ProductDetail() {
 📂 Category: ${getCategoryLabel(product.category)}
 🔗 Product Link: ${productUrl}
 
-${product.images && product.images.length > 0 ? `\n🖼️ Product Image: ${product.images[0].url}` : ''}
 
 Please provide more details about availability and delivery.`;
 
