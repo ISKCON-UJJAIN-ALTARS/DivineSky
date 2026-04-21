@@ -19,6 +19,9 @@ app.use(express.json());
 app.get("/", (req, res) => {
   res.send("Backend + Cloudflare R2 is running 🚀");
 });
+app.get("/health", (req, res) => {
+  res.send("OK");
+});
 
 // routes
 app.use("/auth", authRoutes);            // 🔐 login
