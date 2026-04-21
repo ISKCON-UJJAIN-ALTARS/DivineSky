@@ -1,35 +1,35 @@
-const express = require("express");
-const cors = require("cors");
+name: Keep Backend Alive
 
-const authRoutes = require("./routes/auth");
-const adminUploadRoutes = require("./routes/admin.upload.routes");
-const testimonialsRoutes = require("./routes/testimonials");
-const productRoutes = require("./routes/products.routes");
-const adminUpdateRoutes = require("./routes/admin-update.route");
-const readyStockAdminRoutes = require('./routes/ready-stock.admin.routes');
-const readyStockPublicRoutes = require('./routes/ready-stock.public.routes');
-const galleryRoutes = require("./routes/gallery.routes");
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
 
-const app = express();
+jobs:
+  ping:
+    runs-on: ubuntu-latest
 
-app.use(cors());
-app.use(express.json());
+    steps:
+      - name: Ping backend (retry logic)
+        run: |
+          echo "Pinging backend..."
 
-// health check
-app.get("/", (req, res) => {
-  res.send("Backend + Cloudflare R2 is running 🚀");
-});
-app.get("/health", (req, res) => {
-  res.send("OK");
-});
+          success=false
 
-// routes
-app.use("/auth", authRoutes);            // 🔐 login
-app.use("/admin", adminUploadRoutes);    // 🔐 admin protected
-app.use("/admin", adminUpdateRoutes);    // 🔐 admin protected
-app.use("/admin", readyStockAdminRoutes); // 🔐 admin ready stock
-app.use("/products", readyStockPublicRoutes); // 🌍 public ready stock
-app.use("/products", productRoutes);     // 🌍 public
-app.use("/api/testimonials", testimonialsRoutes);
-app.use("/api/gallery", galleryRoutes);
-module.exports = app;
+          for i in {1..5}
+          do
+            echo "Attempt $i..."
+            if curl --silent --show-error --fail https://divinesky-613l.onrender.com/health; then
+              success=true
+              break
+            fi
+            echo "Retrying in 10 seconds..."
+            sleep 10
+          done
+
+          if [ "$success" = false ]; then
+            echo "All attempts failed ❌"
+            exit 1
+          fi
+
+          echo "Backend is awake ✅"
