@@ -10,4 +10,5 @@ jobs:
 
     steps:
       - name: Ping backend
-        run: curl -I https://divinesky-613l.onrender.com/health
+        run: |
+          curl -I https://divinesky-613l.onrender.com/health
