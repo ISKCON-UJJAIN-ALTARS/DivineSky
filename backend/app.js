@@ -21,6 +21,7 @@ app.get("/", (req, res) => {
 });
 app.get("/health", (req, res) => {
   res.send("OK");
+  console.log("alive");
 });
 
 // routes
