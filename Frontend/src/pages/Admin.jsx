@@ -5,6 +5,16 @@ import Upload from "../components/Admin_Components/Upload";
 import ManageProducts from "../components/Admin_Components/ManageProducts";
 import "../styles/Admin/Admin.css";
 
+import { Helmet } from "react-helmet-async";
+
+<Helmet>
+  <title>Divine Sky - ISKCON Ujjain Altars</title>
+  <meta
+    name="description"
+    content="Handcrafted wooden altars, deities, Tulsi tables and temple furniture from ISKCON Ujjain."
+  />
+</Helmet>
+
 export default function Admin() {
   const navigate = useNavigate();
   const { logout } = useAuth();
