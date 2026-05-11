@@ -4,13 +4,7 @@ import "../styles/Testimonials.css";
 
 import { Helmet } from "react-helmet-async";
 
-<Helmet>
-  <title>Divine Sky - ISKCON Ujjain Altars</title>
-  <meta
-    name="description"
-    content="Handcrafted wooden altars, deities, Tulsi tables and temple furniture from ISKCON Ujjain."
-  />
-</Helmet>
+
 
 
 export default function Testimonials() {
@@ -158,6 +152,15 @@ export default function Testimonials() {
 
   return (
     <section className="testimonials">
+
+<Helmet>
+  <title>Divine Sky - ISKCON Ujjain Altars</title>
+  <meta
+    name="description"
+    content="Handcrafted wooden altars, deities, Tulsi tables and temple furniture from ISKCON Ujjain."
+  />
+</Helmet>
+
       <h2>Words of Encouragement</h2>
       <p className="testimonials-subtitle">
         Appreciation and blessings from senior Vaishnavas

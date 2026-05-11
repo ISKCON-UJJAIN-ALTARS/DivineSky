@@ -2,18 +2,23 @@ import "../styles/Contact.css";
 
 import { Helmet } from "react-helmet-async";
 
-<Helmet>
-  <title>Divine Sky - ISKCON Ujjain Altars</title>
-  <meta
-    name="description"
-    content="Handcrafted wooden altars, deities, Tulsi tables and temple furniture from ISKCON Ujjain."
-  />
-</Helmet>
 
 
 export default function Contact() {
   return (
+
+    
     <div className="contact-page">
+
+
+
+    // /contact page
+<Helmet>
+  <title>Contact Us | Divine Sky Altars</title>
+  <meta name="description" content="Get in touch with Divine Sky for custom wooden altars, temple furniture, and devotional interiors. Based in Ujjain, MP." />
+  <link rel="canonical" href="https://divinesky.vercel.app/contact" />
+</Helmet>
+
       {/* Hero Section */}
       <div className="contact-hero">
         <div className="contact-hero-content">

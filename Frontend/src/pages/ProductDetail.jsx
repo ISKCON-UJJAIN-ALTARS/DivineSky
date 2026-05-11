@@ -7,13 +7,7 @@ import "../styles/ProductDetail.css";
 
 import { Helmet } from "react-helmet-async";
 
-<Helmet>
-  <title>Divine Sky - ISKCON Ujjain Altars</title>
-  <meta
-    name="description"
-    content="Handcrafted wooden altars, deities, Tulsi tables and temple furniture from ISKCON Ujjain."
-  />
-</Helmet>
+
 
 
 export default function ProductDetail() {
@@ -185,6 +179,14 @@ Please provide more details about availability and delivery.`;
 
   return (
     <div className="product-detail-container">
+
+
+<Helmet>
+  <title>{productName} | Divine Sky</title>  {/* dynamic from your product data */}
+  <meta name="description" content={productDescription} />
+  <link rel="canonical" href={`https://divinesky.vercel.app/product/${category}/${id}`} />
+</Helmet>
+
       <button onClick={() => navigate(-1)} className="back-button">
         ← Back
       </button>

@@ -13,13 +13,7 @@ import "../styles/Catalog/Catalog-responsive.css";
 
 import { Helmet } from "react-helmet-async";
 
-<Helmet>
-  <title>Divine Sky - ISKCON Ujjain Altars</title>
-  <meta
-    name="description"
-    content="Handcrafted wooden altars, deities, Tulsi tables and temple furniture from ISKCON Ujjain."
-  />
-</Helmet>
+
 
 
 export default function Catalog({ search }) {
@@ -233,6 +227,13 @@ export default function Catalog({ search }) {
 
   return (
     <div className="catalog-wrapper">
+
+<Helmet>
+  <title>Catalog | Wooden Altars, Deities & Temple Furniture | Divine Sky</title>
+  <meta name="description" content="Browse Divine Sky's full catalog of handcrafted wooden altars, deities, Vyasasans, Tulsi tables, 3D reliefs, and spiritual furniture." />
+  <link rel="canonical" href="https://divinesky.vercel.app/catalog" />
+</Helmet>
+
       {/* Category Bar */}
       <CategoryBar
         categories={CATEGORIES}

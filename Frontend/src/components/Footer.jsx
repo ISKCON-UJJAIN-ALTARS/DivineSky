@@ -3,13 +3,7 @@ import { Link } from "react-router-dom";
 
 import { Helmet } from "react-helmet-async";
 
-<Helmet>
-  <title>Divine Sky - ISKCON Ujjain Altars</title>
-  <meta
-    name="description"
-    content="Handcrafted wooden altars, deities, Tulsi tables and temple furniture from ISKCON Ujjain."
-  />
-</Helmet>
+
 
 
 export default function Footer() {
@@ -17,6 +11,15 @@ export default function Footer() {
 
   return (
     <footer className="footer">
+
+<Helmet>
+  <title>Divine Sky - ISKCON Ujjain Altars</title>
+  <meta
+    name="description"
+    content="Handcrafted wooden altars, deities, Tulsi tables and temple furniture from ISKCON Ujjain."
+  />
+</Helmet>
+      
       <div className="footer-wrapper">
         
         {/* Left Section: Quick Links */}

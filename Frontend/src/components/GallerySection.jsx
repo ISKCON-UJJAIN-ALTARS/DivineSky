@@ -3,13 +3,7 @@ import "../styles/GallerySection.css";
 
 import { Helmet } from "react-helmet-async";
 
-<Helmet>
-  <title>Divine Sky - ISKCON Ujjain Altars</title>
-  <meta
-    name="description"
-    content="Handcrafted wooden altars, deities, Tulsi tables and temple furniture from ISKCON Ujjain."
-  />
-</Helmet>
+
 
 
 const images = [
@@ -142,6 +136,16 @@ export default function GallerySection() {
 
   return (
     <section className="gallery-section">
+
+<Helmet>
+  <title>Divine Sky - ISKCON Ujjain Altars</title>
+  <meta
+    name="description"
+    content="Handcrafted wooden altars, deities, Tulsi tables and temple furniture from ISKCON Ujjain."
+  />
+</Helmet>
+
+
       <div className="gallery-header">
         <span className="gallery-subtitle">A quiet glimpse</span>
         <h2 className="gallery-title">Crafted with Devotion</h2>

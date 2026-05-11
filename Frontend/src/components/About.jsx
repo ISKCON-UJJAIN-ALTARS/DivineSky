@@ -4,18 +4,21 @@ import '../styles/About.css';
 
 import { Helmet } from "react-helmet-async";
 
-<Helmet>
-  <title>Divine Sky - ISKCON Ujjain Altars</title>
-  <meta
-    name="description"
-    content="Handcrafted wooden altars, deities, Tulsi tables and temple furniture from ISKCON Ujjain."
-  />
-</Helmet>
 
 
 const About = () => {
   return (
     <div className="about-container">
+
+    
+<Helmet>
+  <title>About Divine Sky | ISKCON Ujjain Altar Makers</title>
+  <meta name="description" content="Learn about Divine Sky — craftsmen of handcrafted wooden altars and devotional furniture for ISKCON temples and homes worldwide." />
+  <link rel="canonical" href="https://divinesky.vercel.app/about" />
+</Helmet>
+
+
+      
       <div className="hero-section">
         <h1 className="greeting">Hare Krishna!</h1>
         <h2 className="company-name">Divine Sky</h2>
