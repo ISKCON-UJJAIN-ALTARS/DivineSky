@@ -182,9 +182,15 @@ Please provide more details about availability and delivery.`;
 
 
 <Helmet>
-  <title>{productName} | Divine Sky</title>  {/* dynamic from your product data */}
-  <meta name="description" content={productDescription} />
-  <link rel="canonical" href={`https://divinesky.vercel.app/product/${category}/${id}`} />
+  <title>{product?.name} | Divine Sky</title>
+  <meta
+    name="description"
+    content={product?.description}
+  />
+  <link
+    rel="canonical"
+    href={`https://divinesky.vercel.app/product/${category}/${id}`}
+  />
 </Helmet>
 
       <button onClick={() => navigate(-1)} className="back-button">
