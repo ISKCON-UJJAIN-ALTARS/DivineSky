@@ -118,10 +118,17 @@ router.put(
       console.log("Updated subcategory:", existingProduct.subCategory);
 
       // Update hidden status
-    if (hidden !== undefined) {
-      existingProduct.hidden = hidden === "true";
-      console.log("Updated hidden status:", existingProduct.hidden);
-    }
+   // Update hidden status — ONLY change it if explicitly told to
+if (hidden === "true") {
+  existingProduct.hidden = true;
+  console.log("Product explicitly hidden");
+} else if (hidden === "false") {
+  existingProduct.hidden = false;
+  console.log("Product explicitly unhidden");
+} else {
+  // hidden was not sent at all (undefined) — leave existing value untouched
+  console.log("Hidden field not sent — leaving as:", existingProduct.hidden);
+}
 
       // ✅ NEW: Update altar specifications
       if (targetCategory === "altars") {
@@ -434,7 +441,7 @@ router.patch(
       if (product.hidden === undefined) {
       product.hidden = false;
       }
-      
+
       if (!product.images || !Array.isArray(product.images)) {
         return res.status(400).json({
           success: false,
