@@ -36,6 +36,7 @@ router.post(
         includeModel,
         altarSize,      // ✅ NEW: Altar size
         altarDesign     // ✅ NEW: Altar design
+        
       } = req.body;
       
       const modelFile = req.files?.model?.[0];
@@ -220,6 +221,7 @@ router.put(
         name,
         price,
         description,
+        hidden,
         subCategory,
         newCategory,
         replaceImages,
