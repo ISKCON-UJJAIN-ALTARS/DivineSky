@@ -29,11 +29,17 @@ export default function ManageProducts() {
       setMessage({ type: "", text: "" });
 
       const categoryValues = getCategoryValues();
-      
-      // Fetch all categories in parallel with a very high limit
+      const token = localStorage.getItem("admin_token");
+
+      // ✅ NEW: Send the admin token so the backend's optionalAuth middleware
+      // recognizes this as an admin request and includes hidden products.
+      // Without this header, hidden products are filtered out just like
+      // they are for regular customers — which was hiding them from admins too.
       const results = await Promise.allSettled(
         categoryValues.map(category =>
-          fetch(`${API_ENDPOINTS.products.getByCategory(category)}?limit=1000`)
+          fetch(`${API_ENDPOINTS.products.getByCategory(category)}?limit=1000`, {
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+          })
             .then(res => {
               if (!res.ok) throw new Error(`Failed to fetch ${category}`);
               return res.json();
@@ -106,6 +112,63 @@ export default function ManageProducts() {
     } catch (err) {
       console.error("Delete error:", err);
       setMessage({ type: "error", text: "Failed to delete product" });
+    }
+  };
+
+  // ✅ NEW: Quick hide/unhide toggle directly from the manage list, without
+  // navigating into the edit page. Sends the minimum fields the update
+  // routes expect (name/price/description/subCategory) along with the
+  // flipped isHidden value.
+  const toggleHidden = async (product, event) => {
+    event.stopPropagation();
+
+    const nextHidden = !product.isHidden;
+    const confirmMsg = nextHidden
+      ? `Hide "${product.name}" from customers?`
+      : `Unhide "${product.name}" so customers can see it again?`;
+
+    if (!confirm(confirmMsg)) return;
+
+    try {
+      const token = localStorage.getItem("admin_token");
+      const formData = new FormData();
+      formData.append("name", product.name || "");
+      formData.append("price", product.price ?? "");
+      formData.append("description", product.description || "");
+      formData.append("subCategory", product.subCategory || "");
+      formData.append("isHidden", nextHidden ? "true" : "false");
+
+      if (product.category === "altars") {
+        formData.append("altarSize", product.altarSize || "");
+        formData.append("altarDesign", product.altarDesign || "");
+      }
+
+      const response = await fetch(
+        API_ENDPOINTS.admin.updateProduct(product.category, product.id),
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        setMessage({
+          type: "success",
+          text: nextHidden ? "✅ Product hidden from customers" : "✅ Product is now visible to customers",
+        });
+        fetchAllProducts();
+        setTimeout(() => setMessage({ type: "", text: "" }), 2500);
+      } else {
+        setMessage({ type: "error", text: data.message || "Failed to update visibility" });
+      }
+    } catch (err) {
+      console.error("Toggle hidden error:", err);
+      setMessage({ type: "error", text: "Failed to update visibility" });
     }
   };
 
@@ -299,6 +362,7 @@ export default function ManageProducts() {
                   <th className="text-center">Images</th>
                   <th className="text-center">Video</th>
                   <th className="text-center">3D Model</th>
+                  <th className="text-center">Visibility</th>
                   <th className="text-center">Actions</th>
                 </tr>
               </thead>
@@ -307,7 +371,7 @@ export default function ManageProducts() {
                   <tr
                     key={`${product.category}-${product.id}`}
                     onClick={() => handleProductClick(product)}
-                    className="product-row"
+                    className={`product-row ${product.isHidden ? "product-row-hidden" : ""}`}
                   >
                     <td>
                       {product.images?.[0]?.url ? (
@@ -380,6 +444,13 @@ export default function ManageProducts() {
                         <span className="badge-warning">❌</span>
                       )}
                     </td>
+                    <td className="text-center">
+                      {product.isHidden ? (
+                        <span className="badge-warning" title="Hidden from customers">🙈 Hidden</span>
+                      ) : (
+                        <span className="badge-success" title="Visible to customers">👁️ Visible</span>
+                      )}
+                    </td>
                     <td>
                       <div className="action-buttons">
                         <button
@@ -391,6 +462,13 @@ export default function ManageProducts() {
                           title="Edit product"
                         >
                           ✏️
+                        </button>
+                        <button
+                          onClick={(e) => toggleHidden(product, e)}
+                          className="btn-edit"
+                          title={product.isHidden ? "Unhide product" : "Hide product"}
+                        >
+                          {product.isHidden ? "👁️" : "🙈"}
                         </button>
                         <button
                           onClick={(e) => deleteProduct(product, e)}
