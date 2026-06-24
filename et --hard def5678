@@ -1,0 +1,39 @@
+[33md51ab3b[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{0}: reset: moving to d51ab3b5f7077b737a6fc54f8938a98bede004e1
+[33m867ceda[m HEAD@{1}: commit (merge): Merge branch 'main' of https://github.com/ISKCON-UJJAIN-ALTARS/DivineSky
+[33m7ce46f9[m HEAD@{2}: commit: added hidden in put
+[33mb88b78f[m HEAD@{3}: commit (merge): Merge branch 'main' of https://github.com/ISKCON-UJJAIN-ALTARS/DivineSky
+[33m8bf1e5e[m HEAD@{4}: commit: i
+[33mf0a6323[m HEAD@{5}: commit: fixing bug unsaved update
+[33m58406c2[m HEAD@{6}: commit (merge): Merge branch 'main' of https://github.com/ISKCON-UJJAIN-ALTARS/DivineSky
+[33mb68da62[m HEAD@{7}: commit: Resolved filter products
+[33m579a5ea[m HEAD@{8}: commit (merge): Merge branch 'main' of https://github.com/ISKCON-UJJAIN-ALTARS/DivineSky
+[33md51ab3b[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{9}: commit: hide product feature in backend and fronend deployed
+[33m4527c31[m HEAD@{10}: commit (merge): Merge branch 'main' of https://github.com/ISKCON-UJJAIN-ALTARS/DivineSky
+[33m44e2612[m HEAD@{11}: commit: productName bug fixed
+[33m08b96a6[m HEAD@{12}: pull --tags origin main: Merge made by the 'ort' strategy.
+[33meee9aeb[m HEAD@{13}: commit: sitemap visibility issue in google search console
+[33mbfc83c1[m HEAD@{14}: commit (merge): Merge branch 'main' of https://github.com/ISKCON-UJJAIN-ALTARS/DivineSky
+[33mefc10c0[m HEAD@{15}: commit: SEO Upgrade- added helmet in every page.
+[33m14b9221[m HEAD@{16}: commit: SEO Upgrading index.html
+[33m0fc1db8[m HEAD@{17}: commit: SEO Upgradation
+[33mbd5af6a[m HEAD@{18}: commit (merge): Merge branch 'main' of https://github.com/ISKCON-UJJAIN-ALTARS/DivineSky
+[33mf68ef64[m HEAD@{19}: commit: verrcel crons removed
+[33m3c53c90[m HEAD@{20}: commit: SEO Operations
+[33mcbce7d9[m HEAD@{21}: commit: added robots.txt and sitemap
+[33m4c8ac9e[m HEAD@{22}: commit: added meta data in each page
+[33m539fffe[m HEAD@{23}: commit: added helmet for upgrading SEO
+[33mf6b5feb[m HEAD@{24}: commit: working for SEO
+[33m7dcddfc[m HEAD@{25}: commit (merge): merging
+[33m5bcb0b4[m HEAD@{26}: commit: changes in health alive api
+[33m16f9195[m HEAD@{27}: commit: vercel.js recreated updated
+[33m5057ed0[m HEAD@{28}: commit: vercel.js updated
+[33mef64ef9[m HEAD@{29}: commit: updated keep alive
+[33m3610a00[m HEAD@{30}: pull origin main: Fast-forward
+[33ma170001[m HEAD@{31}: commit: updated keep alive
+[33m3d249fe[m HEAD@{32}: commit: updated keep alive
+[33m9563346[m HEAD@{33}: commit: updated keep alive
+[33m91878ce[m HEAD@{34}: commit: updated keep alive
+[33m0d5bb04[m HEAD@{35}: commit: updated keep alive
+[33mdc542cf[m HEAD@{36}: commit: changes in app.js
+[33m5990b06[m HEAD@{37}: commit: .github creation
+[33ma4cf3c0[m HEAD@{38}: clone: from https://github.com/ISKCON-UJJAIN-ALTARS/DivineSky

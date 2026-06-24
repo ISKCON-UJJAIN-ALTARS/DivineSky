@@ -258,8 +258,7 @@ export default function Catalog({ search }) {
           </div>
           
           {currentCategory.subCategories.map((subCat) => {
-            // ✅ FIX: filter from filteredProducts (respects search) instead of allProducts
-            const subCategoryProducts = filteredProducts.filter(
+            const subCategoryProducts = allProducts.filter(
               p => p.subCategory === subCat.value
             );
             

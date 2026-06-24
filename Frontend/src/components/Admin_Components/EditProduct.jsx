@@ -13,8 +13,6 @@ export default function EditProduct() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
-
-  const [isHidden, setIsHidden] = useState(false);
   
   // Form states
   const [name, setName] = useState("");
@@ -67,8 +65,6 @@ export default function EditProduct() {
         setDescription(p.description || "");
         setSelectedCategory(p.category || category);
         setSubCategory(p.subCategory || "");
-
-        setIsHidden(p.hidden === true);
         
         // Set altar specifications if available
         setAltarSize(p.altarSize || "");
@@ -320,10 +316,6 @@ export default function EditProduct() {
       formData.append("price", price);
       formData.append("description", description.trim());
       formData.append("subCategory", subCategory);
-      formData.append(
-        "hidden",
-        isHidden ? "true" : "false"
-        );
       
       // Altar specifications if category is altars
       if (selectedCategory === "altars") {
@@ -545,23 +537,6 @@ export default function EditProduct() {
         {/* Right Column */}
         <div className="edit-form-section">
           <h3>Update Product Information</h3>
-<div className="form-group">
-  <label className="checkbox-label">
-    <input
-      type="checkbox"
-      checked={isHidden}
-      onChange={(e) => setIsHidden(e.target.checked)}
-    />
-    <span className="checkbox-text">
-      🙈 Hide Product From Customers
-    </span>
-  </label>
-
-  <small className="form-hint">
-    Hidden products will remain visible in Admin
-    but will not appear on the catalog website.
-  </small>
-</div>          
 
           <div className="form-group">
             <label>Change Category</label>

@@ -25,25 +25,17 @@ router.get("/", async (req, res) => {
       const data = await getJsonFromR2(jsonKey);
 
       if (data?.products) {
-       allProducts.push(
-  ...Object.values(data.products)
-    .filter((p) => p.hidden !== true)
-    .map((p) => ({
-      ...p,
-      category: p.category || category,
-      images: Array.isArray(p.images)
-        ? p.images
-        : (p.image
-            ? [{
-                url: p.image,
-                size: p.imageSize,
-                mimetype: p.imageType
-              }]
-            : []),
-      hasModel: !!p.model,
-      hasVideo: !!p.video,
-    }))
-);
+        allProducts.push(
+          ...Object.values(data.products).map((p) => ({
+            ...p,
+            category: p.category || category,
+            images: Array.isArray(p.images) 
+              ? p.images 
+              : (p.image ? [{ url: p.image, size: p.imageSize, mimetype: p.imageType }] : []),
+            hasModel: !!p.model,
+            hasVideo: !!p.video,
+          }))
+        );
       }
     }
 
@@ -124,21 +116,19 @@ router.get("/:category", async (req, res) => {
       });
     }
 
-let productsArray = Object.values(data.products || {})
-  .filter((p) => p.hidden !== true)
-  .map((p) => ({
-    ...p,
-    images: Array.isArray(p.images)
-      ? p.images
-      : (p.image ? [{ url: p.image, size: p.imageSize, mimetype: p.imageType }] : []),
-    hasModel: !!p.model,
-    hasVideo: !!p.video,
-  }));
+    let productsArray = Object.values(data.products || {}).map((p) => ({
+      ...p,
+      images: Array.isArray(p.images) 
+        ? p.images 
+        : (p.image ? [{ url: p.image, size: p.imageSize, mimetype: p.imageType }] : []),
+      hasModel: !!p.model,
+      hasVideo: !!p.video,
+    }));
 
-// Filter by subcategory if provided
-if (subCategory) {
-  productsArray = productsArray.filter(p => p.subCategory === subCategory);
-}
+    // Filter by subcategory if provided
+    if (subCategory) {
+      productsArray = productsArray.filter(p => p.subCategory === subCategory);
+    }
 
     // Calculate pagination
     const totalProducts = productsArray.length;
@@ -198,12 +188,6 @@ router.get("/:category/:id", async (req, res) => {
     }
 
     const product = data.products[id];
-    if (product.hidden === true) {
-  return res.status(404).json({
-    success: false,
-    message: "Product not found",
-  });
-}
 
     // Transform product data for response
     const productResponse = {
@@ -274,12 +258,8 @@ router.get("/subcategory/:category/:subCategory", async (req, res) => {
     }
 
     // Filter by subcategory
-   const productsArray = Object.values(data.products || {})
-  .filter(
-    p =>
-      p.subCategory === subCategory &&
-      p.hidden !== true
-  )
+    const productsArray = Object.values(data.products || {})
+      .filter(p => p.subCategory === subCategory)
       .map((p) => ({
         ...p,
         images: Array.isArray(p.images) 
