@@ -162,7 +162,7 @@
 }
 
 .product-price {
-  font-size: 1.5rem;
+  font-size: 1.1rem;
   font-weight: 700;
   background: linear-gradient(135deg, #f59e0b, #d97706);
   -webkit-background-clip: text;
@@ -201,7 +201,7 @@
   }
 
   .product-price {
-    font-size: 1.3rem;
+    font-size: 0.9rem;
   }
 }
 
@@ -219,7 +219,7 @@
   }
 
   .product-price {
-    font-size: 1.2rem;
+    font-size: 0.8rem;
   }
 
   .product-view-btn {
