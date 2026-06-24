@@ -1,7 +1,14 @@
 const express = require("express");
 const { getJsonFromR2 } = require("../services/r2.service");
+const optionalAuth = require("../middleware/optionalAuth.middleware");
 
 const router = express.Router();
+
+// ✅ NEW: optionalAuth runs on every route here. It never blocks the request —
+// it just tells us whether this caller is an authenticated admin (req.isAdmin).
+// Customers (no/invalid token) => req.isAdmin = false => hidden products excluded.
+// Admin panel (valid admin token) => req.isAdmin = true => hidden products included.
+router.use(optionalAuth);
 
 /**
  * 🌍 GET /products
@@ -10,6 +17,7 @@ const router = express.Router();
  *   - page: Page number (default: 1)
  *   - limit: Items per page (default: 20)
  *   - subCategory: Filter by subcategory
+ * ✅ UPDATED: Hidden products are excluded for customers, included for admins
  */
 router.get("/", async (req, res) => {
   try {
@@ -26,15 +34,18 @@ router.get("/", async (req, res) => {
 
       if (data?.products) {
         allProducts.push(
-          ...Object.values(data.products).map((p) => ({
-            ...p,
-            category: p.category || category,
-            images: Array.isArray(p.images) 
-              ? p.images 
-              : (p.image ? [{ url: p.image, size: p.imageSize, mimetype: p.imageType }] : []),
-            hasModel: !!p.model,
-            hasVideo: !!p.video,
-          }))
+          ...Object.values(data.products)
+            .filter((p) => req.isAdmin || !p.isHidden) // ✅ NEW: admins see everything
+            .map((p) => ({
+              ...p,
+              category: p.category || category,
+              images: Array.isArray(p.images) 
+                ? p.images 
+                : (p.image ? [{ url: p.image, size: p.imageSize, mimetype: p.imageType }] : []),
+              hasModel: !!p.model,
+              hasVideo: !!p.video,
+              isHidden: !!p.isHidden,
+            }))
         );
       }
     }
@@ -80,6 +91,7 @@ router.get("/", async (req, res) => {
  *   - page: Page number (default: 1)
  *   - limit: Items per page (default: 20)
  *   - subCategory: Filter by subcategory
+ * ✅ UPDATED: Hidden products are excluded for customers, included for admins
  */
 router.get("/:category", async (req, res) => {
   try {
@@ -116,14 +128,17 @@ router.get("/:category", async (req, res) => {
       });
     }
 
-    let productsArray = Object.values(data.products || {}).map((p) => ({
-      ...p,
-      images: Array.isArray(p.images) 
-        ? p.images 
-        : (p.image ? [{ url: p.image, size: p.imageSize, mimetype: p.imageType }] : []),
-      hasModel: !!p.model,
-      hasVideo: !!p.video,
-    }));
+    let productsArray = Object.values(data.products || {})
+      .filter((p) => req.isAdmin || !p.isHidden) // ✅ NEW: admins see everything
+      .map((p) => ({
+        ...p,
+        images: Array.isArray(p.images) 
+          ? p.images 
+          : (p.image ? [{ url: p.image, size: p.imageSize, mimetype: p.imageType }] : []),
+        hasModel: !!p.model,
+        hasVideo: !!p.video,
+        isHidden: !!p.isHidden,
+      }));
 
     // Filter by subcategory if provided
     if (subCategory) {
@@ -163,6 +178,7 @@ router.get("/:category", async (req, res) => {
 /**
  * 🌍 GET /products/:category/:id
  * Fetch a specific product by category and ID
+ * ✅ UPDATED: Hidden products return 404 to customers, but are returned normally to admins
  */
 router.get("/:category/:id", async (req, res) => {
   try {
@@ -189,6 +205,14 @@ router.get("/:category/:id", async (req, res) => {
 
     const product = data.products[id];
 
+    // ✅ NEW: Hidden products are 404 for customers, but visible to admins
+    if (product.isHidden && !req.isAdmin) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found",
+      });
+    }
+
     // Transform product data for response
     const productResponse = {
       ...product,
@@ -202,6 +226,7 @@ router.get("/:category/:id", async (req, res) => {
       imageCount: Array.isArray(product.images) 
         ? product.images.length 
         : (product.image ? 1 : 0),
+      isHidden: !!product.isHidden,
     };
 
     res.json({
@@ -221,6 +246,7 @@ router.get("/:category/:id", async (req, res) => {
  * 🌍 GET /products/subcategory/:category/:subCategory
  * Fetch products by category and subcategory with pagination
  * This is a dedicated endpoint for subcategory filtering
+ * ✅ UPDATED: Hidden products are excluded for customers, included for admins
  */
 router.get("/subcategory/:category/:subCategory", async (req, res) => {
   try {
@@ -259,7 +285,7 @@ router.get("/subcategory/:category/:subCategory", async (req, res) => {
 
     // Filter by subcategory
     const productsArray = Object.values(data.products || {})
-      .filter(p => p.subCategory === subCategory)
+      .filter(p => p.subCategory === subCategory && (req.isAdmin || !p.isHidden)) // ✅ NEW
       .map((p) => ({
         ...p,
         images: Array.isArray(p.images) 
@@ -267,6 +293,7 @@ router.get("/subcategory/:category/:subCategory", async (req, res) => {
           : (p.image ? [{ url: p.image, size: p.imageSize, mimetype: p.imageType }] : []),
         hasModel: !!p.model,
         hasVideo: !!p.video,
+        isHidden: !!p.isHidden,
       }));
 
     // Calculate pagination
