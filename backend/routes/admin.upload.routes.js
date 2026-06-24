@@ -36,7 +36,8 @@ router.post(
         includeModel,
         altarSize,      // ✅ NEW: Altar size
         altarDesign,    // ✅ NEW: Altar design
-        isHidden        // ✅ NEW: Hide product from customers
+        isHidden,       // ✅ NEW: Hide product from customers
+        hidePrice       // ✅ NEW: Hide price, show Call/WhatsApp instead
       } = req.body;
       
       const modelFile = req.files?.model?.[0];
@@ -96,6 +97,9 @@ router.post(
       // ✅ NEW: Check if product should be hidden from customers
       const shouldBeHidden = isHidden === "true" || isHidden === true;
 
+      // ✅ NEW: Check if price should be hidden (show Call/WhatsApp instead)
+      const shouldHidePrice = hidePrice === "true" || hidePrice === true;
+
       // Upload model to R2 if provided and checkbox is checked
       let modelResult = null;
       if (shouldIncludeModel && modelFile) {
@@ -149,6 +153,7 @@ router.post(
         images: imageResults,
         hasModel: !!modelResult,
         isHidden: shouldBeHidden, // ✅ NEW: Hide product from customers
+        hidePrice: shouldHidePrice, // ✅ NEW: Hide price, show Call/WhatsApp instead
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
@@ -186,6 +191,7 @@ router.post(
       console.log("   Category:", category);
       console.log("   SubCategory:", subCategory || "None");
       console.log("   Hidden:", shouldBeHidden);
+      console.log("   Hide Price:", shouldHidePrice);
       if (category === "altars") {
         console.log("   Altar Size:", altarSize);
         console.log("   Altar Design:", altarDesign);
@@ -236,10 +242,11 @@ router.put(
         readyStockQuantity,
         altarSize,      // ✅ NEW: Altar size
         altarDesign,    // ✅ NEW: Altar design
-        isHidden        // ✅ NEW: Hide product from customers
+        isHidden,       // ✅ NEW: Hide product from customers
+        hidePrice       // ✅ NEW: Hide price, show Call/WhatsApp instead
       } = req.body;
 
-      console.log("📝 Update request:", { category, id, newCategory, altarSize, altarDesign, isHidden });
+      console.log("📝 Update request:", { category, id, newCategory, altarSize, altarDesign, isHidden, hidePrice });
 
       const modelFile = req.files?.model?.[0];
       const imageFiles = req.files?.images || [];
@@ -281,6 +288,11 @@ router.put(
       // ✅ NEW: Update isHidden flag
       if (isHidden !== undefined) {
         product.isHidden = isHidden === "true" || isHidden === true;
+      }
+
+      // ✅ NEW: Update hidePrice flag
+      if (hidePrice !== undefined) {
+        product.hidePrice = hidePrice === "true" || hidePrice === true;
       }
 
       // ✅ NEW: Update altar specifications

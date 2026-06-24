@@ -45,6 +45,7 @@ router.get("/", async (req, res) => {
               hasModel: !!p.model,
               hasVideo: !!p.video,
               isHidden: !!p.isHidden,
+              hidePrice: !!p.hidePrice,
             }))
         );
       }
@@ -138,6 +139,7 @@ router.get("/:category", async (req, res) => {
         hasModel: !!p.model,
         hasVideo: !!p.video,
         isHidden: !!p.isHidden,
+        hidePrice: !!p.hidePrice,
       }));
 
     // Filter by subcategory if provided
@@ -227,6 +229,7 @@ router.get("/:category/:id", async (req, res) => {
         ? product.images.length 
         : (product.image ? 1 : 0),
       isHidden: !!product.isHidden,
+      hidePrice: !!product.hidePrice,
     };
 
     res.json({
@@ -294,6 +297,7 @@ router.get("/subcategory/:category/:subCategory", async (req, res) => {
         hasModel: !!p.model,
         hasVideo: !!p.video,
         isHidden: !!p.isHidden,
+        hidePrice: !!p.hidePrice,
       }));
 
     // Calculate pagination

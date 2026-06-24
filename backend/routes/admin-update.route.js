@@ -43,7 +43,9 @@ router.put(
         altarSize,
         altarDesign,
         // ✅ NEW: Hide product from customers
-        isHidden
+        isHidden,
+        // ✅ NEW: Hide price, show Call/WhatsApp instead
+        hidePrice
       } = req.body;
       
       console.log("=== UPDATE PRODUCT REQUEST ===");
@@ -54,6 +56,7 @@ router.put(
       console.log("Altar Size:", altarSize);
       console.log("Altar Design:", altarDesign);
       console.log("Is Hidden:", isHidden);
+      console.log("Hide Price:", hidePrice);
       console.log("Request body:", req.body);
 
       // Check if changing category
@@ -122,6 +125,10 @@ router.put(
       // ✅ NEW: ALWAYS update isHidden flag
       existingProduct.isHidden = isHidden === "true" || isHidden === true;
       console.log("Updated isHidden:", existingProduct.isHidden);
+
+      // ✅ NEW: ALWAYS update hidePrice flag
+      existingProduct.hidePrice = hidePrice === "true" || hidePrice === true;
+      console.log("Updated hidePrice:", existingProduct.hidePrice);
 
       // ✅ Update altar specifications
       if (targetCategory === "altars") {
@@ -506,6 +513,11 @@ router.get("/products/:category/:id", auth, async (req, res) => {
     // ✅ NEW: Ensure isHidden field exists (default to false for older products)
     if (product.isHidden === undefined) {
       product.isHidden = false;
+    }
+
+    // ✅ NEW: Ensure hidePrice field exists (default to false for older products)
+    if (product.hidePrice === undefined) {
+      product.hidePrice = false;
     }
 
     // 🆕 Check if in ready stock

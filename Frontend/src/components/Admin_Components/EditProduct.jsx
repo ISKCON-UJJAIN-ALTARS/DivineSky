@@ -31,6 +31,9 @@ export default function EditProduct() {
 
   // ✅ NEW: Hidden from customers
   const [isHidden, setIsHidden] = useState(false);
+
+  // ✅ NEW: Hide price, show Call/WhatsApp instead
+  const [hidePrice, setHidePrice] = useState(false);
   
   // File states
   const [newImages, setNewImages] = useState([]);
@@ -75,6 +78,9 @@ export default function EditProduct() {
 
         // ✅ NEW: Set hidden state
         setIsHidden(!!p.isHidden);
+
+        // ✅ NEW: Set hide price state
+        setHidePrice(!!p.hidePrice);
         
         // Set Ready Stock info
         if (data.readyStock) {
@@ -283,6 +289,7 @@ export default function EditProduct() {
       formData.append("description", description.trim());
       formData.append("subCategory", subCategory);
       formData.append("isHidden", nextHidden ? "true" : "false");
+      formData.append("hidePrice", hidePrice ? "true" : "false");
 
       if (selectedCategory === "altars") {
         formData.append("altarSize", altarSize);
@@ -321,6 +328,74 @@ export default function EditProduct() {
     } catch (err) {
       console.error("Toggle hidden error:", err);
       setMessage({ type: "error", text: "Failed to update visibility" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // ✅ NEW: Quick toggle for hiding/showing the price without touching the
+  // rest of the form. When hidden, customers see a Call/WhatsApp prompt
+  // instead of the price on the storefront.
+  const toggleHidePrice = async () => {
+    const nextHidePrice = !hidePrice;
+    const confirmMsg = nextHidePrice
+      ? "Hide the price for this product? Customers will see a Call/WhatsApp prompt instead."
+      : "Show the price again for this product?";
+
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      setSaving(true);
+      setMessage({ type: "", text: "" });
+
+      const token = localStorage.getItem("admin_token");
+      const formData = new FormData();
+      formData.append("name", name.trim());
+      formData.append("price", price);
+      formData.append("description", description.trim());
+      formData.append("subCategory", subCategory);
+      formData.append("isHidden", isHidden ? "true" : "false");
+      formData.append("hidePrice", nextHidePrice ? "true" : "false");
+
+      if (selectedCategory === "altars") {
+        formData.append("altarSize", altarSize);
+        formData.append("altarDesign", altarDesign);
+      }
+
+      formData.append("inReadyStock", inReadyStock ? "true" : "false");
+      if (inReadyStock && readyStockQuantity) {
+        formData.append("readyStockQuantity", readyStockQuantity);
+      }
+
+      const response = await fetch(
+        API_ENDPOINTS.admin.updateProduct(category, id),
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        setHidePrice(nextHidePrice);
+        setMessage({
+          type: "success",
+          text: nextHidePrice
+            ? "✅ Price hidden — customers will see Call/WhatsApp instead"
+            : "✅ Price is now visible to customers",
+        });
+        fetchProduct();
+        setTimeout(() => setMessage({ type: "", text: "" }), 2500);
+      } else {
+        setMessage({ type: "error", text: data.message || "Failed to update price visibility" });
+      }
+    } catch (err) {
+      console.error("Toggle hide price error:", err);
+      setMessage({ type: "error", text: "Failed to update price visibility" });
     } finally {
       setSaving(false);
     }
@@ -390,6 +465,9 @@ export default function EditProduct() {
 
       // ✅ NEW: ALWAYS send visibility state
       formData.append("isHidden", isHidden ? "true" : "false");
+
+      // ✅ NEW: ALWAYS send hide price state
+      formData.append("hidePrice", hidePrice ? "true" : "false");
       
       // Altar specifications if category is altars
       if (selectedCategory === "altars") {
@@ -538,6 +616,30 @@ export default function EditProduct() {
               {isHidden
                 ? "This product is currently hidden and won't show up on the storefront."
                 : "This product is live on the storefront. Hiding it will remove it from customer view immediately."}
+            </small>
+          </div>
+
+          {/* ✅ NEW: Price visibility status + quick toggle */}
+          <div className="info-block">
+            <label>Price Display</label>
+            <div className="current-category">
+              <span className={`category-badge ${hidePrice ? "badge-hidden" : "badge-visible"}`}>
+                {hidePrice ? "📞 Showing Call/WhatsApp" : "₹ Showing price"}
+              </span>
+            </div>
+            <button
+              type="button"
+              className="remove-btn"
+              onClick={toggleHidePrice}
+              disabled={saving}
+              style={{ marginTop: "8px" }}
+            >
+              {hidePrice ? "Show Price Again" : "Hide Price (Show Call/WhatsApp)"}
+            </button>
+            <small className="form-hint">
+              {hidePrice
+                ? "Customers see \"📞 Call / WhatsApp: +91 97136 00059\" instead of the price. The price itself is kept and still used internally."
+                : "Customers see the price normally. Hiding it will replace it with a Call/WhatsApp prompt on the storefront."}
             </small>
           </div>
           
@@ -788,6 +890,25 @@ export default function EditProduct() {
               {isHidden
                 ? "Hidden — this product will not appear on the storefront until unchecked and saved."
                 : "Visible — uncheck and save is not needed; check this box to hide the product from customers."}
+            </small>
+          </div>
+
+          {/* ✅ NEW: Hide price toggle (also saved with the main form) */}
+          <div className="form-group ready-stock-section">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={hidePrice}
+                onChange={(e) => setHidePrice(e.target.checked)}
+              />
+              <span className="checkbox-text">
+                📞 Hide price (show Call / WhatsApp instead)
+              </span>
+            </label>
+            <small className="form-hint">
+              {hidePrice
+                ? "Customers will see \"📞 Call / WhatsApp: +91 97136 00059\" in place of the price."
+                : "Check this to replace the displayed price with a Call/WhatsApp prompt for customers."}
             </small>
           </div>
 
