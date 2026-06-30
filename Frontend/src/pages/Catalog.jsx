@@ -20,8 +20,19 @@ export default function Catalog({ search }) {
   const [displayedProducts, setDisplayedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedCategory, setSelectedCategory] = useState("all");
-  const [selectedSubCategory, setSelectedSubCategory] = useState("");
+
+  // 🔧 FIX: Initialize directly from URL so the first render/fetch
+  // already uses the correct category — no "all products" flash.
+  const [selectedCategory, setSelectedCategory] = useState(() => {
+    const categoryFromUrl = searchParams.get("category");
+    const categoryExists =
+      categoryFromUrl && CATEGORIES.some((cat) => cat.value === categoryFromUrl);
+    return categoryExists ? categoryFromUrl : "all";
+  });
+  const [selectedSubCategory, setSelectedSubCategory] = useState(
+    () => searchParams.get("subCategory") || ""
+  );
+
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -44,21 +55,21 @@ export default function Catalog({ search }) {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Read category & subCategory from URL on mount or when URL changes
+  // 🔧 Sync state with URL on subsequent changes (back/forward nav,
+  // manual URL edits). Initial state is already handled above, so this
+  // just keeps things consistent after mount — and skips redundant
+  // updates to avoid extra re-fetches.
   useEffect(() => {
     const categoryFromUrl = searchParams.get("category");
     const subCategoryFromUrl = searchParams.get("subCategory");
 
-    if (categoryFromUrl) {
-      const categoryExists = CATEGORIES.some((cat) => cat.value === categoryFromUrl);
-      if (categoryExists) {
-        setSelectedCategory(categoryFromUrl);
-      }
-    } else {
-      setSelectedCategory("all");
-    }
+    const categoryExists =
+      categoryFromUrl && CATEGORIES.some((cat) => cat.value === categoryFromUrl);
+    const nextCategory = categoryExists ? categoryFromUrl : "all";
+    const nextSubCategory = subCategoryFromUrl || "";
 
-    setSelectedSubCategory(subCategoryFromUrl || "");
+    setSelectedCategory((prev) => (prev !== nextCategory ? nextCategory : prev));
+    setSelectedSubCategory((prev) => (prev !== nextSubCategory ? nextSubCategory : prev));
   }, [searchParams]);
 
   // SUPER OPTIMIZED: Use single backend endpoint for "all" category

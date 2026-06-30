@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import "../styles/Navbar.css";
 
 export default function Navbar({ search, setSearch }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const location = useLocation();
 
   const toggleMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -23,6 +24,13 @@ export default function Navbar({ search, setSearch }) {
   const handleLinkClick = () => {
     setIsMobileMenuOpen(false);
   };
+
+  // 🔧 Clear search whenever the route changes (e.g. clicking a product
+  // or a nav link), so it doesn't carry over to pages where it's irrelevant.
+  useEffect(() => {
+    setSearch("");
+    setIsSearchOpen(false);
+  }, [location.key]);
 
   useEffect(() => {
     const handleResize = () => {
