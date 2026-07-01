@@ -22,12 +22,13 @@ export const ALTAR_SPECIFICATIONS = {
     required: true,
     options: [
       { value: "3-domed", label: "3 Domed Design" },
-      { value: "opulent-3-dome", label: "Opulent 3 Dome Design" },
-      { value: "iskcon-logo", label: "ISKCON Logo Design" },
+      { value: "4-dome", label: "Opulent 3 Dome Design" },
+      { value: "iskcon-logo", label: "ISKCON Jali Design" },
       { value: "hexagonal", label: "Hexagonal Altar Design" },
-      { value: "peacock-top", label: "Peacock Top Design" },
-      { value: "super-opulent", label: "Super Opulent Design" },
-      { value: "custom", label: "Custom Design" }
+      { value: "peacock", label: "Peacock Design" },
+      { value: "tovp", label: "TOVP" },
+      { value: "chittagong", label: "Chittagong" },
+      { value: "vrindavan", label: "Vrindavan" }
     ]
   }
 };
