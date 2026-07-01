@@ -551,6 +551,202 @@
 }
 
 /* ================================
+   SUBCATEGORY SPECIFIC STYLES
+================================ */
+.subcategory-group {
+  animation: slideIn 0.3s ease;
+  background: linear-gradient(135deg, rgba(217, 119, 6, 0.05), rgba(245, 158, 11, 0.05));
+  padding: 16px;
+  border-radius: 12px;
+  border: 2px solid rgba(217, 119, 6, 0.2);
+}
+
+.label-hint {
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: #d97706;
+  font-style: italic;
+  margin-left: 8px;
+}
+
+.subcategory-select {
+  border: 2px solid rgba(217, 119, 6, 0.3) !important;
+  background: white;
+  font-weight: 500;
+}
+
+.subcategory-select:focus {
+  border-color: #d97706 !important;
+  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.15) !important;
+}
+
+.subcategory-select option[value=""] {
+  color: #9ca3af;
+  font-style: italic;
+}
+
+/* ================================
+   ALTAR SPECIFICATIONS
+================================ */
+.altar-specifications-section {
+  background: linear-gradient(135deg, rgba(217, 119, 6, 0.04), rgba(245, 158, 11, 0.04));
+  border: 2px solid rgba(217, 119, 6, 0.2);
+  border-radius: 14px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.altar-specifications-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 4px;
+}
+
+.altar-spec-group {
+  margin-bottom: 0;
+}
+
+/* ================================
+   AMAZON-STYLE DESCRIPTION
+================================ */
+.description-section {
+  border: 2px solid rgba(217, 119, 6, 0.2);
+  border-radius: 16px;
+  padding: 24px;
+  background: linear-gradient(135deg, rgba(217, 119, 6, 0.03), rgba(245, 158, 11, 0.03));
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  animation: slideIn 0.3s ease;
+}
+
+.description-section-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 4px;
+  padding-bottom: 14px;
+  border-bottom: 2px solid rgba(217, 119, 6, 0.15);
+}
+
+/* Feature bullet rows */
+.features-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.feature-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.feature-bullet {
+  font-size: 1.3rem;
+  color: #d97706;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.feature-input {
+  flex: 1;
+}
+
+/* Spec table rows */
+.specs-table {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.specs-header-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 38px;
+  gap: 8px;
+  padding: 0 4px;
+}
+
+.specs-col-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.spec-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 38px;
+  gap: 8px;
+  align-items: center;
+}
+
+.spec-input {
+  width: 100%;
+}
+
+/* Shared remove button for features & specs */
+.remove-feature-btn {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  background: none;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  color: #9ca3af;
+  cursor: pointer;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+  font-family: inherit;
+  padding: 0;
+}
+
+.remove-feature-btn:hover:not(:disabled) {
+  color: #dc2626;
+  border-color: #fca5a5;
+  background: rgba(239, 68, 68, 0.06);
+}
+
+.remove-feature-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Add row / add feature button */
+.add-row-btn {
+  align-self: flex-start;
+  background: none;
+  border: 1.5px dashed #d1d5db;
+  border-radius: 8px;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 7px 16px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+
+.add-row-btn:hover:not(:disabled) {
+  border-color: #d97706;
+  color: #d97706;
+  background: rgba(217, 119, 6, 0.04);
+}
+
+.add-row-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ================================
    RESPONSIVE - TABLET
 ================================ */
 @media (max-width: 768px) {
@@ -569,6 +765,25 @@
   .images-preview-grid {
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     gap: 12px;
+  }
+
+  .subcategory-group {
+    padding: 12px;
+  }
+
+  .label-hint {
+    display: block;
+    margin-left: 0;
+    margin-top: 4px;
+  }
+
+  .description-section {
+    padding: 18px;
+  }
+
+  .specs-header-row,
+  .spec-row {
+    grid-template-columns: 1fr 1fr 34px;
   }
 }
 
@@ -614,111 +829,51 @@
   .btn-secondary {
     width: 100%;
   }
+
+  .description-section {
+    padding: 14px;
+    gap: 16px;
+  }
+
+  /* Stack spec columns on very small screens */
+  .specs-header-row {
+    display: none; /* hide column labels, they're obvious on mobile */
+  }
+
+  .spec-row {
+    grid-template-columns: 1fr 1fr 34px;
+    gap: 6px;
+  }
+
+  .feature-row {
+    gap: 6px;
+  }
 }
 
 /* ================================
    ANIMATIONS
 ================================ */
 @keyframes slideInUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes gentle-bounce {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
-}
-
-@keyframes progress-pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.8;
-  }
-}
-
-
-/* ================================
-   SUBCATEGORY SPECIFIC STYLES
-   Add these to your existing Upload.css
-================================ */
-
-/* Subcategory Form Group with Animation */
-.subcategory-group {
-  animation: slideIn 0.3s ease;
-  background: linear-gradient(135deg, rgba(217, 119, 6, 0.05), rgba(245, 158, 11, 0.05));
-  padding: 16px;
-  border-radius: 12px;
-  border: 2px solid rgba(217, 119, 6, 0.2);
+  from { opacity: 0; transform: translateY(30px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Label with hint */
-.label-hint {
-  font-size: 0.85rem;
-  font-weight: 400;
-  color: #d97706;
-  font-style: italic;
-  margin-left: 8px;
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
-/* Subcategory Select with special styling */
-.subcategory-select {
-  border: 2px solid rgba(217, 119, 6, 0.3) !important;
-  background: white;
-  font-weight: 500;
+@keyframes gentle-bounce {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-10px); }
 }
 
-.subcategory-select:focus {
-  border-color: #d97706 !important;
-  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.15) !important;
-}
-
-/* Empty option styling */
-.subcategory-select option[value=""] {
-  color: #9ca3af;
-  font-style: italic;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .subcategory-group {
-    padding: 12px;
-  }
-  
-  .label-hint {
-    display: block;
-    margin-left: 0;
-    margin-top: 4px;
-  }
+@keyframes progress-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.8; }
 }
