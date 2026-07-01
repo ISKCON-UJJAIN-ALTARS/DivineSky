@@ -23,6 +23,7 @@ export const ALTAR_SPECIFICATIONS = {
     options: [
       { value: "3-domed", label: "3 Dome Design" },
       { value: "opulent-3-domed", label: "Opulent 3 Dome Design" },
+      { value: "royal-3-domed", label: "Royal 3 Dome Design" },
       { value: "4-dome", label: "4 Dome Design" },
       { value: "iskcon-logo", label: "ISKCON Logo Design" },
       { value: "hexagonal", label: "Hexagonal Altar Design" },
