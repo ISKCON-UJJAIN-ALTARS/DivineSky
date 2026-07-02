@@ -22,6 +22,7 @@ export const ALTAR_SPECIFICATIONS = {
     required: true,
     options: [
       { value: "3-domed", label: "3 Dome Design" },
+      { value: "1-domed", label: "1 Dome Design" },
       { value: "opulent-3-domed", label: "Opulent 3 Dome Design" },
       { value: "royal-3-domed", label: "Royal 3 Dome Design" },
       { value: "4-dome", label: "4 Dome Design" },
