@@ -85,7 +85,7 @@ export const CATEGORIES = [
   },
   { 
     value: "furniture", 
-    label: "Spiritual Furniture",
+    label: "Other",
     subCategories: [
       { value: "reception-table", label: "Reception Table" },
       { value: "donation-box", label: "Donation Box & Jhula" },
