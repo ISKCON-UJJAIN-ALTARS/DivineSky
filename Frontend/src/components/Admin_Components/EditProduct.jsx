@@ -8,81 +8,89 @@ import "../../styles/Admin/EditProduct.css";
 export default function EditProduct() {
   const { category, id } = useParams();
   const navigate = useNavigate();
-  
+
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
-  
-  // Form states
+
+  // Basic fields
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
-  const [description, setDescription] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(category);
   const [subCategory, setSubCategory] = useState("");
-  
+
+  // Amazon-style description fields
+  const [tagline, setTagline] = useState("");
+  const [features, setFeatures] = useState("");
+  const [specs, setSpecs] = useState([{ key: "", value: "" }]);
+
   // Altar specifications
   const [altarSize, setAltarSize] = useState("");
   const [altarDesign, setAltarDesign] = useState("");
-  
-  // Ready Stock states
+
+  // Visibility & price
+  const [isHidden, setIsHidden] = useState(false);
+  const [hidePrice, setHidePrice] = useState(false);
+
+  // Ready Stock
   const [inReadyStock, setInReadyStock] = useState(false);
   const [readyStockQuantity, setReadyStockQuantity] = useState("");
 
-  // ✅ NEW: Hidden from customers
-  const [isHidden, setIsHidden] = useState(false);
-
-  // ✅ NEW: Hide price, show Call/WhatsApp instead
-  const [hidePrice, setHidePrice] = useState(false);
-  
   // File states
   const [newImages, setNewImages] = useState([]);
   const [replaceImages, setReplaceImages] = useState(false);
   const [newModel, setNewModel] = useState(null);
   const [newVideo, setNewVideo] = useState(null);
-  
-  // Preview states
   const [imagePreviews, setImagePreviews] = useState([]);
-  
+
   useEffect(() => {
     fetchProduct();
   }, [category, id]);
+
+  // ─── Parse description JSON into fields ───────────────────────
+  const parseDescription = (raw) => {
+    if (!raw) return { tagline: "", features: "", specs: [{ key: "", value: "" }] };
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed.tagline || parsed.features || parsed.specs) {
+        return {
+          tagline: parsed.tagline || "",
+          features: typeof parsed.features === "string" ? parsed.features : "",
+          specs: parsed.specs?.length ? parsed.specs : [{ key: "", value: "" }],
+        };
+      }
+    } catch { /* fall through */ }
+    // Legacy plain text — put in features
+    return { tagline: "", features: raw, specs: [{ key: "", value: "" }] };
+  };
 
   const fetchProduct = async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem("admin_token");
-      const response = await fetch(
-        API_ENDPOINTS.admin.getProduct(category, id),
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      
+      const response = await fetch(API_ENDPOINTS.admin.getProduct(category, id), {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       const data = await response.json();
-      
+
       if (data.success) {
         const p = data.product;
         setProduct(p);
         setName(p.name);
         setPrice(p.price);
-        setDescription(p.description || "");
         setSelectedCategory(p.category || category);
         setSubCategory(p.subCategory || "");
-        
-        // Set altar specifications if available
         setAltarSize(p.altarSize || "");
         setAltarDesign(p.altarDesign || "");
-
-        // ✅ NEW: Set hidden state
         setIsHidden(!!p.isHidden);
-
-        // ✅ NEW: Set hide price state
         setHidePrice(!!p.hidePrice);
-        
-        // Set Ready Stock info
+
+        const desc = parseDescription(p.description);
+        setTagline(desc.tagline);
+        setFeatures(desc.features);
+        setSpecs(desc.specs);
+
         if (data.readyStock) {
           setInReadyStock(data.readyStock.inReadyStock || false);
           setReadyStockQuantity(data.readyStock.quantity ? String(data.readyStock.quantity) : "");
@@ -91,53 +99,51 @@ export default function EditProduct() {
         setMessage({ type: "error", text: "Product not found" });
       }
       setLoading(false);
-    } catch (err) {
-      console.error("Fetch error:", err);
+    } catch {
       setMessage({ type: "error", text: "Failed to load product" });
       setLoading(false);
     }
   };
 
+  // ─── Spec table handlers ───────────────────────────────────────
+  const handleSpecChange = (index, field, value) => {
+    setSpecs((prev) => prev.map((s, i) => (i === index ? { ...s, [field]: value } : s)));
+  };
+
+  const addSpec = () => {
+    if (specs.length >= 15) return;
+    setSpecs((prev) => [...prev, { key: "", value: "" }]);
+  };
+
+  const removeSpec = (index) => {
+    if (specs.length === 1) return;
+    setSpecs((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // ─── File handlers ─────────────────────────────────────────────
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files);
-    
-    const currentImageCount = product?.images?.length || 0;
-    const maxAllowed = replaceImages ? 5 : (10 - currentImageCount);
-    
+    const maxAllowed = replaceImages ? 5 : 10 - (product?.images?.length || 0);
     if (files.length > maxAllowed) {
-      setMessage({ 
-        type: "error", 
-        text: replaceImages 
-          ? "Maximum 5 images when replacing" 
-          : `Can only add ${maxAllowed} more images (max 10 total)` 
+      setMessage({
+        type: "error",
+        text: replaceImages
+          ? "Maximum 5 images when replacing"
+          : `Can only add ${maxAllowed} more images (max 10 total)`,
       });
       return;
     }
-
     setNewImages(files);
-    
-    const previews = files.map(file => URL.createObjectURL(file));
-    setImagePreviews(previews);
+    setImagePreviews(files.map((f) => URL.createObjectURL(f)));
     setMessage({ type: "", text: "" });
   };
 
   const handleModelChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
-    const isGLB = file.name.toLowerCase().endsWith(".glb") || 
-                  file.name.toLowerCase().endsWith(".gltf");
-
-    if (!isGLB) {
-      setMessage({ type: "error", text: "Only GLB/GLTF files allowed" });
-      return;
-    }
-
-    if (file.size > 50 * 1024 * 1024) {
-      setMessage({ type: "error", text: "Model must be under 50MB" });
-      return;
-    }
-
+    const isGLB = file.name.toLowerCase().endsWith(".glb") || file.name.toLowerCase().endsWith(".gltf");
+    if (!isGLB) { setMessage({ type: "error", text: "Only GLB/GLTF files allowed" }); return; }
+    if (file.size > 50 * 1024 * 1024) { setMessage({ type: "error", text: "Model must be under 50MB" }); return; }
     setNewModel(file);
     setMessage({ type: "", text: "" });
   };
@@ -145,42 +151,24 @@ export default function EditProduct() {
   const handleVideoChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
-    if (!file.type.startsWith("video/")) {
-      setMessage({ type: "error", text: "Only video files allowed" });
-      return;
-    }
-
-    if (file.size > 100 * 1024 * 1024) {
-      setMessage({ type: "error", text: "Video must be under 100MB" });
-      return;
-    }
-
+    if (!file.type.startsWith("video/")) { setMessage({ type: "error", text: "Only video files allowed" }); return; }
+    if (file.size > 100 * 1024 * 1024) { setMessage({ type: "error", text: "Video must be under 100MB" }); return; }
     setNewVideo(file);
     setMessage({ type: "", text: "" });
   };
 
+  // ─── Remove existing media ─────────────────────────────────────
   const removeImage = async (imageIndex) => {
-    if (!window.confirm(`Remove this image?`)) return;
-
+    if (!window.confirm("Remove this image?")) return;
     try {
       setSaving(true);
       const token = localStorage.getItem("admin_token");
-      
-      const response = await fetch(
-        API_ENDPOINTS.admin.removeImage(category, id),
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ imageIndex }),
-        }
-      );
-
+      const response = await fetch(API_ENDPOINTS.admin.removeImage(category, id), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ imageIndex }),
+      });
       const data = await response.json();
-
       if (data.success) {
         setMessage({ type: "success", text: "✅ Image removed" });
         fetchProduct();
@@ -188,266 +176,135 @@ export default function EditProduct() {
       } else {
         setMessage({ type: "error", text: data.message });
       }
-    } catch (err) {
+    } catch {
       setMessage({ type: "error", text: "Failed to remove image" });
     } finally {
       setSaving(false);
     }
   };
 
-  const removeExistingModel = async () => {
-    if (!window.confirm("Remove 3D model from this product?")) return;
-
+  const removeExistingMedia = async (field) => {
+    const label = field === "removeModel" ? "3D model" : "video";
+    if (!window.confirm(`Remove ${label} from this product?`)) return;
     try {
       setSaving(true);
       const token = localStorage.getItem("admin_token");
       const formData = new FormData();
-      formData.append("removeModel", "true");
-
-      const response = await fetch(
-        API_ENDPOINTS.admin.updateProduct(category, id),
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: formData,
-        }
-      );
-
+      formData.append(field, "true");
+      const response = await fetch(API_ENDPOINTS.admin.updateProduct(category, id), {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
       const data = await response.json();
-
       if (data.success) {
-        setMessage({ type: "success", text: "✅ Model removed" });
+        setMessage({ type: "success", text: `✅ ${label.charAt(0).toUpperCase() + label.slice(1)} removed` });
         fetchProduct();
         setTimeout(() => setMessage({ type: "", text: "" }), 2000);
       } else {
         setMessage({ type: "error", text: data.message });
       }
-    } catch (err) {
-      setMessage({ type: "error", text: "Failed to remove model" });
+    } catch {
+      setMessage({ type: "error", text: `Failed to remove ${label}` });
     } finally {
       setSaving(false);
     }
   };
 
-  const removeExistingVideo = async () => {
-    if (!window.confirm("Remove video from this product?")) return;
+  // ─── Build shared formData fields ──────────────────────────────
+  const buildBaseFormData = () => {
+    const descriptionData = {
+      tagline: tagline.trim(),
+      features: features.trim(),
+      specs: specs.filter((s) => s.key.trim() && s.value.trim()),
+    };
 
-    try {
-      setSaving(true);
-      const token = localStorage.getItem("admin_token");
-      const formData = new FormData();
-      formData.append("removeVideo", "true");
-
-      const response = await fetch(
-        API_ENDPOINTS.admin.updateProduct(category, id),
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: formData,
-        }
-      );
-
-      const data = await response.json();
-
-      if (data.success) {
-        setMessage({ type: "success", text: "✅ Video removed" });
-        fetchProduct();
-        setTimeout(() => setMessage({ type: "", text: "" }), 2000);
-      } else {
-        setMessage({ type: "error", text: data.message });
-      }
-    } catch (err) {
-      setMessage({ type: "error", text: "Failed to remove video" });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // ✅ NEW: Quick toggle for hide/unhide without touching the rest of the form.
-  // Sends the full current text fields too, since the backend update routes
-  // expect name/price/description/subCategory on every save.
-  const toggleHidden = async () => {
-    const nextHidden = !isHidden;
-    const confirmMsg = nextHidden
-      ? "Hide this product from customers? It will no longer appear on the storefront."
-      : "Unhide this product? It will become visible to customers again.";
-
-    if (!window.confirm(confirmMsg)) return;
-
-    try {
-      setSaving(true);
-      setMessage({ type: "", text: "" });
-
-      const token = localStorage.getItem("admin_token");
-      const formData = new FormData();
-      formData.append("name", name.trim());
-      formData.append("price", price);
-      formData.append("description", description.trim());
-      formData.append("subCategory", subCategory);
-      formData.append("isHidden", nextHidden ? "true" : "false");
-      formData.append("hidePrice", hidePrice ? "true" : "false");
-
-      if (selectedCategory === "altars") {
-        formData.append("altarSize", altarSize);
-        formData.append("altarDesign", altarDesign);
-      }
-
-      formData.append("inReadyStock", inReadyStock ? "true" : "false");
-      if (inReadyStock && readyStockQuantity) {
-        formData.append("readyStockQuantity", readyStockQuantity);
-      }
-
-      const response = await fetch(
-        API_ENDPOINTS.admin.updateProduct(category, id),
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: formData,
-        }
-      );
-
-      const data = await response.json();
-
-      if (data.success) {
-        setIsHidden(nextHidden);
-        setMessage({
-          type: "success",
-          text: nextHidden ? "✅ Product hidden from customers" : "✅ Product is now visible to customers",
-        });
-        fetchProduct();
-        setTimeout(() => setMessage({ type: "", text: "" }), 2500);
-      } else {
-        setMessage({ type: "error", text: data.message || "Failed to update visibility" });
-      }
-    } catch (err) {
-      console.error("Toggle hidden error:", err);
-      setMessage({ type: "error", text: "Failed to update visibility" });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // ✅ NEW: Quick toggle for hiding/showing the price without touching the
-  // rest of the form. When hidden, customers see a Call/WhatsApp prompt
-  // instead of the price on the storefront.
-  const toggleHidePrice = async () => {
-    const nextHidePrice = !hidePrice;
-    const confirmMsg = nextHidePrice
-      ? "Hide the price for this product? Customers will see a Call/WhatsApp prompt instead."
-      : "Show the price again for this product?";
-
-    if (!window.confirm(confirmMsg)) return;
-
-    try {
-      setSaving(true);
-      setMessage({ type: "", text: "" });
-
-      const token = localStorage.getItem("admin_token");
-      const formData = new FormData();
-      formData.append("name", name.trim());
-      formData.append("price", price);
-      formData.append("description", description.trim());
-      formData.append("subCategory", subCategory);
-      formData.append("isHidden", isHidden ? "true" : "false");
-      formData.append("hidePrice", nextHidePrice ? "true" : "false");
-
-      if (selectedCategory === "altars") {
-        formData.append("altarSize", altarSize);
-        formData.append("altarDesign", altarDesign);
-      }
-
-      formData.append("inReadyStock", inReadyStock ? "true" : "false");
-      if (inReadyStock && readyStockQuantity) {
-        formData.append("readyStockQuantity", readyStockQuantity);
-      }
-
-      const response = await fetch(
-        API_ENDPOINTS.admin.updateProduct(category, id),
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: formData,
-        }
-      );
-
-      const data = await response.json();
-
-      if (data.success) {
-        setHidePrice(nextHidePrice);
-        setMessage({
-          type: "success",
-          text: nextHidePrice
-            ? "✅ Price hidden — customers will see Call/WhatsApp instead"
-            : "✅ Price is now visible to customers",
-        });
-        fetchProduct();
-        setTimeout(() => setMessage({ type: "", text: "" }), 2500);
-      } else {
-        setMessage({ type: "error", text: data.message || "Failed to update price visibility" });
-      }
-    } catch (err) {
-      console.error("Toggle hide price error:", err);
-      setMessage({ type: "error", text: "Failed to update price visibility" });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleSave = async () => {
-    if (!name.trim()) {
-      setMessage({ type: "error", text: "Name cannot be empty" });
-      return;
-    }
-
-    if (!price || parseFloat(price) < 0) {
-      setMessage({ type: "error", text: "Price must be a valid number" });
-      return;
-    }
-
-    // Validate ready stock quantity
-    if (inReadyStock) {
-      const qty = parseInt(readyStockQuantity);
-      if (!readyStockQuantity || qty <= 0) {
-        setMessage({ type: "error", text: "Ready stock quantity must be greater than 0" });
-        return;
-      }
-    }
-
-    // Validate subcategory if category has subcategories
-    const currentCategoryData = CATEGORIES_OBJECT[selectedCategory];
-    const hasSubCategories = currentCategoryData?.subCategories?.length > 0;
-    if (hasSubCategories && !subCategory) {
-      setMessage({ type: "error", text: "Please select a subcategory" });
-      return;
-    }
-
-    // Validate altar specifications if category is altars
+    const formData = new FormData();
+    formData.append("name", name.trim());
+    formData.append("price", price);
+    formData.append("description", JSON.stringify(descriptionData));
+    formData.append("subCategory", subCategory);
+    formData.append("isHidden", isHidden ? "true" : "false");
+    formData.append("hidePrice", hidePrice ? "true" : "false");
+    formData.append("inReadyStock", inReadyStock ? "true" : "false");
+    if (inReadyStock && readyStockQuantity) formData.append("readyStockQuantity", readyStockQuantity);
     if (selectedCategory === "altars") {
-      if (!altarSize) {
-        setMessage({ type: "error", text: "Please select an altar size" });
-        return;
+      formData.append("altarSize", altarSize);
+      formData.append("altarDesign", altarDesign);
+    }
+    return formData;
+  };
+
+  // ─── Quick toggles ─────────────────────────────────────────────
+  const quickToggle = async (field, currentValue, messages) => {
+    const next = !currentValue;
+    if (!window.confirm(next ? messages.confirmOn : messages.confirmOff)) return;
+    try {
+      setSaving(true);
+      setMessage({ type: "", text: "" });
+      const token = localStorage.getItem("admin_token");
+      const formData = buildBaseFormData();
+      formData.set(field, next ? "true" : "false");
+
+      const response = await fetch(API_ENDPOINTS.admin.updateProduct(category, id), {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        if (field === "isHidden") setIsHidden(next);
+        if (field === "hidePrice") setHidePrice(next);
+        setMessage({ type: "success", text: next ? messages.successOn : messages.successOff });
+        fetchProduct();
+        setTimeout(() => setMessage({ type: "", text: "" }), 2500);
+      } else {
+        setMessage({ type: "error", text: data.message || "Failed to update" });
       }
-      if (!altarDesign) {
-        setMessage({ type: "error", text: "Please select an altar design" });
-        return;
-      }
+    } catch {
+      setMessage({ type: "error", text: "Failed to update" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const toggleHidden = () => quickToggle("isHidden", isHidden, {
+    confirmOn: "Hide this product from customers?",
+    confirmOff: "Unhide this product so customers can see it again?",
+    successOn: "✅ Product hidden from customers",
+    successOff: "✅ Product is now visible to customers",
+  });
+
+  const toggleHidePrice = () => quickToggle("hidePrice", hidePrice, {
+    confirmOn: "Hide the price? Customers will see a Call/WhatsApp prompt instead.",
+    confirmOff: "Show the price again for this product?",
+    successOn: "✅ Price hidden — customers will see Call/WhatsApp instead",
+    successOff: "✅ Price is now visible to customers",
+  });
+
+  // ─── Main save ─────────────────────────────────────────────────
+  const handleSave = async () => {
+    if (!name.trim()) { setMessage({ type: "error", text: "Name cannot be empty" }); return; }
+    if (!price || parseFloat(price) < 0) { setMessage({ type: "error", text: "Price must be a valid number" }); return; }
+    if (inReadyStock && (!readyStockQuantity || parseInt(readyStockQuantity) <= 0)) {
+      setMessage({ type: "error", text: "Ready stock quantity must be greater than 0" }); return;
     }
 
-    // Confirm category change
+    const currentCategoryData = CATEGORIES_OBJECT[selectedCategory];
+    if (currentCategoryData?.subCategories?.length > 0 && !subCategory) {
+      setMessage({ type: "error", text: "Please select a subcategory" }); return;
+    }
+    if (selectedCategory === "altars") {
+      if (!altarSize) { setMessage({ type: "error", text: "Please select an altar size" }); return; }
+      if (!altarDesign) { setMessage({ type: "error", text: "Please select an altar design" }); return; }
+    }
+
     const isChangingCategory = selectedCategory !== category;
     if (isChangingCategory) {
-      const confirmMsg = `This will move the product from "${getCategoryLabel(category)}" to "${getCategoryLabel(selectedCategory)}". Continue?`;
-      if (!window.confirm(confirmMsg)) {
-        return;
-      }
+      if (!window.confirm(
+        `This will move the product from "${getCategoryLabel(category)}" to "${getCategoryLabel(selectedCategory)}". Continue?`
+      )) return;
     }
 
     try {
@@ -455,97 +312,48 @@ export default function EditProduct() {
       setMessage({ type: "", text: "" });
 
       const token = localStorage.getItem("admin_token");
-      const formData = new FormData();
-      
-      // ALWAYS send these fields
-      formData.append("name", name.trim());
-      formData.append("price", price);
-      formData.append("description", description.trim());
-      formData.append("subCategory", subCategory);
+      const formData = buildBaseFormData();
 
-      // ✅ NEW: ALWAYS send visibility state
-      formData.append("isHidden", isHidden ? "true" : "false");
-
-      // ✅ NEW: ALWAYS send hide price state
-      formData.append("hidePrice", hidePrice ? "true" : "false");
-      
-      // Altar specifications if category is altars
-      if (selectedCategory === "altars") {
-        formData.append("altarSize", altarSize);
-        formData.append("altarDesign", altarDesign);
-      }
-      
-      // Ready Stock fields
-      formData.append("inReadyStock", inReadyStock ? "true" : "false");
-      if (inReadyStock && readyStockQuantity) {
-        formData.append("readyStockQuantity", readyStockQuantity);
-      }
-      
-      // Category change
-      if (isChangingCategory) {
-        formData.append("newCategory", selectedCategory);
-      }
-
+      if (isChangingCategory) formData.append("newCategory", selectedCategory);
       if (newImages.length > 0) {
         formData.append("replaceImages", replaceImages ? "true" : "false");
-        newImages.forEach(img => formData.append("images", img));
+        newImages.forEach((img) => formData.append("images", img));
       }
+      if (newModel) { formData.append("includeModel", "true"); formData.append("model", newModel); }
+      if (newVideo) formData.append("video", newVideo);
 
-      if (newModel) {
-        formData.append("includeModel", "true");
-        formData.append("model", newModel);
-      }
-
-      if (newVideo) {
-        formData.append("video", newVideo);
-      }
-
-      const response = await fetch(
-        API_ENDPOINTS.admin.updateProduct(category, id),
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: formData,
-        }
-      );
-
+      const response = await fetch(API_ENDPOINTS.admin.updateProduct(category, id), {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
       const data = await response.json();
 
       if (data.success) {
-        let successMsg = "✅ Product updated successfully!";
-        if (isChangingCategory) {
-          successMsg = "✅ Product updated and moved to new category!";
-        }
+        let successMsg = isChangingCategory
+          ? "✅ Product updated and moved to new category!"
+          : "✅ Product updated successfully!";
         if (data.readyStock?.inStock) {
           successMsg += ` (Added to Ready Stock: ${data.readyStock.quantity} units)`;
         } else if (!inReadyStock) {
           successMsg += " (Removed from Ready Stock)";
         }
-        
         setMessage({ type: "success", text: successMsg });
-        
-        // Clear form
         setNewImages([]);
         setNewModel(null);
         setNewVideo(null);
         setImagePreviews([]);
         setReplaceImages(false);
-        
-        // Navigate after delay
         setTimeout(() => {
-          if (isChangingCategory && data.newCategory) {
-            navigate(`/admin/products?category=${data.newCategory}`);
-          } else {
-            navigate("/admin/products");
-          }
+          navigate(isChangingCategory && data.newCategory
+            ? `/admin/products?category=${data.newCategory}`
+            : "/admin/products"
+          );
         }, 2000);
       } else {
         setMessage({ type: "error", text: data.message || "Update failed" });
       }
-    } catch (err) {
-      console.error("Save error:", err);
+    } catch {
       setMessage({ type: "error", text: "Failed to save changes" });
     } finally {
       setSaving(false);
@@ -565,9 +373,7 @@ export default function EditProduct() {
     return (
       <div className="edit-error">
         <p>Product not found</p>
-        <button onClick={() => navigate("/admin/products")}>
-          ← Back to Products
-        </button>
+        <button onClick={() => navigate("/admin/products")}>← Back to Products</button>
       </div>
     );
   }
@@ -585,17 +391,15 @@ export default function EditProduct() {
       </div>
 
       {message.text && (
-        <div className={`message message-${message.type}`}>
-          {message.text}
-        </div>
+        <div className={`message message-${message.type}`}>{message.text}</div>
       )}
 
       <div className="edit-content">
-        {/* Left Column */}
+        {/* ── LEFT: Current Info ── */}
         <div className="current-info-section">
           <h3>Current Product Details</h3>
 
-          {/* ✅ NEW: Visibility status + quick toggle */}
+          {/* Visibility */}
           <div className="info-block">
             <label>Visibility</label>
             <div className="current-category">
@@ -603,23 +407,17 @@ export default function EditProduct() {
                 {isHidden ? "🙈 Hidden from customers" : "👁️ Visible to customers"}
               </span>
             </div>
-            <button
-              type="button"
-              className="remove-btn"
-              onClick={toggleHidden}
-              disabled={saving}
-              style={{ marginTop: "8px" }}
-            >
+            <button type="button" className="remove-btn" onClick={toggleHidden} disabled={saving} style={{ marginTop: "8px" }}>
               {isHidden ? "Unhide Product" : "Hide Product"}
             </button>
             <small className="form-hint">
               {isHidden
-                ? "This product is currently hidden and won't show up on the storefront."
-                : "This product is live on the storefront. Hiding it will remove it from customer view immediately."}
+                ? "This product is hidden and won't appear on the storefront."
+                : "This product is live on the storefront."}
             </small>
           </div>
 
-          {/* ✅ NEW: Price visibility status + quick toggle */}
+          {/* Price Display */}
           <div className="info-block">
             <label>Price Display</label>
             <div className="current-category">
@@ -627,106 +425,73 @@ export default function EditProduct() {
                 {hidePrice ? "📞 Showing Call/WhatsApp" : "₹ Showing price"}
               </span>
             </div>
-            <button
-              type="button"
-              className="remove-btn"
-              onClick={toggleHidePrice}
-              disabled={saving}
-              style={{ marginTop: "8px" }}
-            >
+            <button type="button" className="remove-btn" onClick={toggleHidePrice} disabled={saving} style={{ marginTop: "8px" }}>
               {hidePrice ? "Show Price Again" : "Hide Price (Show Call/WhatsApp)"}
             </button>
             <small className="form-hint">
               {hidePrice
-                ? "Customers see \"📞 Call / WhatsApp: +91 97136 00059\" instead of the price. The price itself is kept and still used internally."
-                : "Customers see the price normally. Hiding it will replace it with a Call/WhatsApp prompt on the storefront."}
+                ? 'Customers see "📞 Call / WhatsApp: +91 97136 00059" instead of the price.'
+                : "Customers see the price normally."}
             </small>
           </div>
-          
+
+          {/* Category */}
           <div className="info-block">
             <label>Current Category</label>
             <div className="current-category">
-              <span className="category-badge">
-                {getCategoryLabel(product.category || category)}
-              </span>
+              <span className="category-badge">{getCategoryLabel(product.category || category)}</span>
             </div>
             {product.subCategory && (
               <div className="current-subcategory">
-                <small>
-                  Subcategory: {getSubCategoryLabel(product.category || category, product.subCategory)}
-                </small>
+                <small>Subcategory: {getSubCategoryLabel(product.category || category, product.subCategory)}</small>
               </div>
             )}
           </div>
 
-          {/* Display current altar specifications if available */}
+          {/* Altar Specs */}
           {product.category === "altars" && (product.altarSize || product.altarDesign) && (
             <div className="info-block">
               <label>Current Altar Specifications</label>
               <div className="current-altar-specs">
-                {product.altarSize && (
-                  <div className="spec-item">
-                    <strong>Size:</strong> {product.altarSize}
-                  </div>
-                )}
-                {product.altarDesign && (
-                  <div className="spec-item">
-                    <strong>Design:</strong> {product.altarDesign}
-                  </div>
-                )}
+                {product.altarSize && <div className="spec-item"><strong>Size:</strong> {product.altarSize}</div>}
+                {product.altarDesign && <div className="spec-item"><strong>Design:</strong> {product.altarDesign}</div>}
               </div>
             </div>
           )}
-          
+
+          {/* Images */}
           <div className="info-block">
             <label>Current Images ({product.images?.length || 0})</label>
             <div className="current-images-grid">
               {product.images?.map((img, idx) => (
                 <div key={idx} className="image-with-remove">
                   <img src={img.url} alt={`Product ${idx + 1}`} />
-                  <button
-                    className="remove-image-btn"
-                    onClick={() => removeImage(idx)}
-                    disabled={saving}
-                    title="Remove this image"
-                  >
-                    ✕
-                  </button>
+                  <button className="remove-image-btn" onClick={() => removeImage(idx)} disabled={saving} title="Remove this image">✕</button>
                 </div>
               ))}
             </div>
           </div>
 
+          {/* 3D Model */}
           <div className="info-block">
             <label>3D Model</label>
             {product.hasModel ? (
               <div className="current-file">
                 <span>✅ Model available</span>
-                <button 
-                  className="remove-btn"
-                  onClick={removeExistingModel}
-                  disabled={saving}
-                >
-                  Remove
-                </button>
+                <button className="remove-btn" onClick={() => removeExistingMedia("removeModel")} disabled={saving}>Remove</button>
               </div>
             ) : (
               <p className="no-file">❌ No model uploaded</p>
             )}
           </div>
 
+          {/* Video */}
           <div className="info-block">
             <label>Video</label>
             {product.video ? (
               <div className="current-file">
                 <video src={product.video} controls className="video-preview" />
-                <button 
-                  className="remove-btn"
-                  onClick={removeExistingVideo}
-                  disabled={saving}
-                >
-                  Remove
-                </button>
+                <button className="remove-btn" onClick={() => removeExistingMedia("removeVideo")} disabled={saving}>Remove</button>
               </div>
             ) : (
               <p className="no-file">❌ No video uploaded</p>
@@ -734,10 +499,11 @@ export default function EditProduct() {
           </div>
         </div>
 
-        {/* Right Column */}
+        {/* ── RIGHT: Edit Form ── */}
         <div className="edit-form-section">
           <h3>Update Product Information</h3>
 
+          {/* Category */}
           <div className="form-group">
             <label>Change Category</label>
             <select
@@ -746,18 +512,12 @@ export default function EditProduct() {
                 const newCat = e.target.value;
                 setSelectedCategory(newCat);
                 setSubCategory("");
-                // Reset altar specs when changing away from altars
-                if (newCat !== "altars") {
-                  setAltarSize("");
-                  setAltarDesign("");
-                }
+                if (newCat !== "altars") { setAltarSize(""); setAltarDesign(""); }
               }}
               className="category-select"
             >
               {Object.entries(CATEGORIES_OBJECT).map(([key, value]) => (
-                <option key={key} value={key}>
-                  {value.label}
-                </option>
+                <option key={key} value={key}>{value.label}</option>
               ))}
             </select>
             {selectedCategory !== category && (
@@ -767,22 +527,17 @@ export default function EditProduct() {
             )}
           </div>
 
+          {/* Subcategory */}
           {hasSubCategories && (
             <div className="form-group subcategory-group">
               <label>
                 Subcategory *
                 <span className="label-hint">for {getCategoryLabel(selectedCategory)}</span>
               </label>
-              <select
-                value={subCategory}
-                onChange={(e) => setSubCategory(e.target.value)}
-                className="category-select subcategory-select"
-              >
+              <select value={subCategory} onChange={(e) => setSubCategory(e.target.value)} className="category-select subcategory-select">
                 <option value="">-- Select Subcategory --</option>
                 {currentSubCategories.map((sub) => (
-                  <option key={sub.value} value={sub.value}>
-                    {sub.label}
-                  </option>
+                  <option key={sub.value} value={sub.value}>{sub.label}</option>
                 ))}
               </select>
               {product.subCategory && subCategory !== product.subCategory && (
@@ -793,143 +548,150 @@ export default function EditProduct() {
             </div>
           )}
 
-          {/* ALTAR SPECIFICATIONS (CONDITIONAL) */}
+          {/* Altar Specifications */}
           {selectedCategory === "altars" && (
             <div className="altar-specifications-section">
-              <h3 className="altar-specifications-title">
-                🕉️ Altar Specifications
-              </h3>
-              
-              {/* Altar Size */}
+              <h3 className="altar-specifications-title">🕉️ Altar Specifications</h3>
               <div className="altar-spec-group form-group">
-                <label>
-                  {ALTAR_SPECIFICATIONS.size.label} *
-                </label>
-                <select
-                  value={altarSize}
-                  onChange={(e) => setAltarSize(e.target.value)}
-                  className="category-select altar-spec-select"
-                >
+                <label>{ALTAR_SPECIFICATIONS.size.label} *</label>
+                <select value={altarSize} onChange={(e) => setAltarSize(e.target.value)} className="category-select altar-spec-select">
                   <option value="">-- Select Size --</option>
-                  {ALTAR_SPECIFICATIONS.size.options.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
+                  {ALTAR_SPECIFICATIONS.size.options.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
                   ))}
                 </select>
               </div>
-
-              {/* Altar Design */}
               <div className="altar-spec-group form-group">
-                <label>
-                  {ALTAR_SPECIFICATIONS.design.label} *
-                </label>
-                <select
-                  value={altarDesign}
-                  onChange={(e) => setAltarDesign(e.target.value)}
-                  className="category-select altar-spec-select"
-                >
+                <label>{ALTAR_SPECIFICATIONS.design.label} *</label>
+                <select value={altarDesign} onChange={(e) => setAltarDesign(e.target.value)} className="category-select altar-spec-select">
                   <option value="">-- Select Design --</option>
-                  {ALTAR_SPECIFICATIONS.design.options.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
+                  {ALTAR_SPECIFICATIONS.design.options.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
                   ))}
                 </select>
               </div>
             </div>
           )}
 
+          {/* Name & Price */}
           <div className="form-group">
             <label>Product Name *</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Enter product name"
-              required
-            />
+            <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Enter product name" />
           </div>
 
           <div className="form-group">
             <label>Price (₹) *</label>
-            <input
-              type="number"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              placeholder="0.00"
-              min="0"
-              step="0.01"
-              required
-            />
+            <input type="number" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="0.00" min="0" step="0.01" />
           </div>
 
-          <div className="form-group">
-            <label>Description</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Enter product description"
-              rows={4}
-            />
+          {/* ── Amazon-style Description ── */}
+          <div className="description-section">
+            <h3 className="description-section-title">📝 Product Description</h3>
+
+            <div className="form-group">
+              <label>Tagline / Headline</label>
+              <input
+                type="text"
+                value={tagline}
+                onChange={(e) => setTagline(e.target.value)}
+                placeholder='e.g. "Handcrafted Royal Prabhupada Altar in Teak & Gold Finish"'
+                maxLength={120}
+              />
+              <small className="form-hint">{tagline.length}/120 characters</small>
+            </div>
+
+            <div className="form-group">
+              <label>
+                About this Item
+                <span className="label-hint">shown as a description on the product page</span>
+              </label>
+              <textarea
+                value={features}
+                onChange={(e) => setFeatures(e.target.value)}
+                placeholder="Enter product description, features, pricing options, materials, etc."
+                rows={10}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>
+                Specifications
+                <span className="label-hint">shown as a table on product page</span>
+              </label>
+              <div className="specs-table">
+                <div className="specs-header-row">
+                  <span className="specs-col-label">Attribute</span>
+                  <span className="specs-col-label">Value</span>
+                  <span className="specs-col-action" />
+                </div>
+                {specs.map((spec, index) => (
+                  <div key={index} className="spec-row">
+                    <input
+                      type="text"
+                      value={spec.key}
+                      onChange={(e) => handleSpecChange(index, "key", e.target.value)}
+                      placeholder="e.g. Material"
+                      className="spec-input"
+                    />
+                    <input
+                      type="text"
+                      value={spec.value}
+                      onChange={(e) => handleSpecChange(index, "value", e.target.value)}
+                      placeholder="e.g. Teak Wood"
+                      className="spec-input"
+                    />
+                    <button
+                      type="button"
+                      className="remove-feature-btn"
+                      onClick={() => removeSpec(index)}
+                      disabled={specs.length === 1}
+                      title="Remove"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+              {specs.length < 15 && (
+                <button type="button" className="add-row-btn" onClick={addSpec}>+ Add Row</button>
+              )}
+            </div>
           </div>
 
-          {/* ✅ NEW: Hidden from customers toggle (also saved with the main form) */}
+          {/* Visibility checkbox */}
           <div className="form-group ready-stock-section">
             <label className="checkbox-label">
-              <input
-                type="checkbox"
-                checked={isHidden}
-                onChange={(e) => setIsHidden(e.target.checked)}
-              />
-              <span className="checkbox-text">
-                🙈 Hide from customers
-              </span>
+              <input type="checkbox" checked={isHidden} onChange={(e) => setIsHidden(e.target.checked)} />
+              <span className="checkbox-text">🙈 Hide from customers</span>
             </label>
             <small className="form-hint">
-              {isHidden
-                ? "Hidden — this product will not appear on the storefront until unchecked and saved."
-                : "Visible — uncheck and save is not needed; check this box to hide the product from customers."}
+              {isHidden ? "Hidden — won't appear on the storefront until unchecked and saved." : "Visible to customers."}
             </small>
           </div>
 
-          {/* ✅ NEW: Hide price toggle (also saved with the main form) */}
+          {/* Hide price checkbox */}
           <div className="form-group ready-stock-section">
             <label className="checkbox-label">
-              <input
-                type="checkbox"
-                checked={hidePrice}
-                onChange={(e) => setHidePrice(e.target.checked)}
-              />
-              <span className="checkbox-text">
-                📞 Hide price (show Call / WhatsApp instead)
-              </span>
+              <input type="checkbox" checked={hidePrice} onChange={(e) => setHidePrice(e.target.checked)} />
+              <span className="checkbox-text">📞 Hide price (show Call / WhatsApp instead)</span>
             </label>
             <small className="form-hint">
               {hidePrice
-                ? "Customers will see \"📞 Call / WhatsApp: +91 97136 00059\" in place of the price."
-                : "Check this to replace the displayed price with a Call/WhatsApp prompt for customers."}
+                ? 'Customers will see "📞 Call / WhatsApp: +91 97136 00059" in place of the price.'
+                : "Check to replace the displayed price with a Call/WhatsApp prompt."}
             </small>
           </div>
 
-          {/* Ready Stock Section */}
+          {/* Ready Stock */}
           <div className="form-group ready-stock-section">
             <label className="checkbox-label">
               <input
                 type="checkbox"
                 checked={inReadyStock}
-                onChange={(e) => {
-                  setInReadyStock(e.target.checked);
-                  if (!e.target.checked) {
-                    setReadyStockQuantity("");
-                  }
-                }}
+                onChange={(e) => { setInReadyStock(e.target.checked); if (!e.target.checked) setReadyStockQuantity(""); }}
               />
-              <span className="checkbox-text">
-                📦 Add to Ready Stock
-              </span>
+              <span className="checkbox-text">📦 Add to Ready Stock</span>
             </label>
-            
             {inReadyStock && (
               <div className="quantity-input-wrapper">
                 <input
@@ -940,50 +702,30 @@ export default function EditProduct() {
                   min="1"
                   className="quantity-input"
                 />
-                <small className="form-hint">
-                  Number of units available for immediate delivery
-                </small>
+                <small className="form-hint">Number of units available for immediate delivery</small>
               </div>
             )}
           </div>
 
+          {/* Images */}
           <div className="form-group">
-            <label>
-              {replaceImages ? "Replace All Images" : "Add New Images"}
-            </label>
-            
+            <label>{replaceImages ? "Replace All Images" : "Add New Images"}</label>
             <div className="image-mode-toggle">
               <label className="toggle-option">
-                <input
-                  type="radio"
-                  checked={!replaceImages}
-                  onChange={() => setReplaceImages(false)}
-                />
+                <input type="radio" checked={!replaceImages} onChange={() => setReplaceImages(false)} />
                 <span>Add to existing ({10 - (product.images?.length || 0)} slots available)</span>
               </label>
               <label className="toggle-option">
-                <input
-                  type="radio"
-                  checked={replaceImages}
-                  onChange={() => setReplaceImages(true)}
-                />
+                <input type="radio" checked={replaceImages} onChange={() => setReplaceImages(true)} />
                 <span>Replace all images</span>
               </label>
             </div>
-
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={handleImageChange}
-              className="file-input"
-            />
+            <input type="file" accept="image/*" multiple onChange={handleImageChange} className="file-input" />
             <small className="form-hint">
-              {replaceImages 
-                ? "Max 5 images - will delete all existing images" 
+              {replaceImages
+                ? "Max 5 images — will delete all existing images"
                 : `Can add up to ${10 - (product.images?.length || 0)} more images`}
             </small>
-            
             {imagePreviews.length > 0 && (
               <div className="new-images-preview">
                 {imagePreviews.map((preview, idx) => (
@@ -993,40 +735,24 @@ export default function EditProduct() {
             )}
           </div>
 
+          {/* 3D Model */}
           <div className="form-group">
             <label>Upload New 3D Model (GLB/GLTF)</label>
-            <input
-              type="file"
-              accept=".glb,.gltf"
-              onChange={handleModelChange}
-              className="file-input"
-            />
-            {newModel && (
-              <p className="file-name">📦 {newModel.name}</p>
-            )}
+            <input type="file" accept=".glb,.gltf" onChange={handleModelChange} className="file-input" />
+            {newModel && <p className="file-name">📦 {newModel.name}</p>}
             <small className="form-hint">Will replace existing model if any</small>
           </div>
 
+          {/* Video */}
           <div className="form-group">
             <label>Upload New Video</label>
-            <input
-              type="file"
-              accept="video/*"
-              onChange={handleVideoChange}
-              className="file-input"
-            />
-            {newVideo && (
-              <p className="file-name">🎥 {newVideo.name}</p>
-            )}
+            <input type="file" accept="video/*" onChange={handleVideoChange} className="file-input" />
+            {newVideo && <p className="file-name">🎥 {newVideo.name}</p>}
             <small className="form-hint">Will replace existing video if any</small>
           </div>
 
           <div className="form-actions">
-            <button
-              className="save-btn"
-              onClick={handleSave}
-              disabled={saving}
-            >
+            <button className="save-btn" onClick={handleSave} disabled={saving}>
               {saving ? "Saving..." : "💾 Save Changes"}
             </button>
           </div>

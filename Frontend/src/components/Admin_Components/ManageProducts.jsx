@@ -18,7 +18,6 @@ export default function ManageProducts() {
     fetchAllProducts();
   }, []);
 
-  // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [selectedCategory, searchQuery]);
@@ -28,56 +27,33 @@ export default function ManageProducts() {
       setLoading(true);
       setMessage({ type: "", text: "" });
 
-      const categoryValues = getCategoryValues();
       const token = localStorage.getItem("admin_token");
 
-      // ✅ NEW: Send the admin token so the backend's optionalAuth middleware
-      // recognizes this as an admin request and includes hidden products.
-      // Without this header, hidden products are filtered out just like
-      // they are for regular customers — which was hiding them from admins too.
       const results = await Promise.allSettled(
-        categoryValues.map(category =>
+        getCategoryValues().map((category) =>
           fetch(`${API_ENDPOINTS.products.getByCategory(category)}?limit=1000`, {
             headers: token ? { Authorization: `Bearer ${token}` } : {},
           })
-            .then(res => {
+            .then((res) => {
               if (!res.ok) throw new Error(`Failed to fetch ${category}`);
               return res.json();
             })
         )
       );
 
-      // Combine all products
       const allProducts = results
-        .filter(result => result.status === 'fulfilled')
-        .flatMap(result => {
-          const data = result.value;
-          if (data.success && data.products) {
-            // Convert products object to array with IDs
-            const productsArray = Array.isArray(data.products)
-              ? data.products
-              : Object.entries(data.products).map(([id, product]) => ({
-                  ...product,
-                  id: id,
-                }));
-            return productsArray;
-          }
-          return [];
+        .filter((r) => r.status === "fulfilled")
+        .flatMap((r) => {
+          const data = r.value;
+          if (!data.success || !data.products) return [];
+          return Array.isArray(data.products)
+            ? data.products
+            : Object.entries(data.products).map(([id, product]) => ({ ...product, id }));
         });
 
-      console.log(`Loaded ${allProducts.length} products from all categories`);
-      
-      // Log products per category for debugging
-      const categoryValues2 = getCategoryValues();
-      categoryValues2.forEach(cat => {
-        const count = allProducts.filter(p => p.category === cat).length;
-        console.log(`${cat}: ${count} products`);
-      });
-      
       setProducts(allProducts);
       setLoading(false);
     } catch (err) {
-      console.error("Error fetching products:", err);
       setMessage({ type: "error", text: "Failed to load products" });
       setLoading(false);
     }
@@ -85,21 +61,14 @@ export default function ManageProducts() {
 
   const deleteProduct = async (product, event) => {
     event.stopPropagation();
-    
     if (!confirm(`Delete "${product.name}"? This action cannot be undone.`)) return;
 
     try {
       const token = localStorage.getItem("admin_token");
       const response = await fetch(
         API_ENDPOINTS.admin.deleteProduct(product.category, product.id),
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        { method: "DELETE", headers: { Authorization: `Bearer ${token}` } }
       );
-
       const data = await response.json();
 
       if (data.success) {
@@ -109,25 +78,20 @@ export default function ManageProducts() {
       } else {
         setMessage({ type: "error", text: data.message || "Failed to delete product" });
       }
-    } catch (err) {
-      console.error("Delete error:", err);
+    } catch {
       setMessage({ type: "error", text: "Failed to delete product" });
     }
   };
 
-  // ✅ NEW: Quick hide/unhide toggle directly from the manage list, without
-  // navigating into the edit page. Sends the minimum fields the update
-  // routes expect (name/price/description/subCategory) along with the
-  // flipped isHidden value.
   const toggleHidden = async (product, event) => {
     event.stopPropagation();
-
     const nextHidden = !product.isHidden;
-    const confirmMsg = nextHidden
-      ? `Hide "${product.name}" from customers?`
-      : `Unhide "${product.name}" so customers can see it again?`;
 
-    if (!confirm(confirmMsg)) return;
+    if (!confirm(
+      nextHidden
+        ? `Hide "${product.name}" from customers?`
+        : `Unhide "${product.name}" so customers can see it again?`
+    )) return;
 
     try {
       const token = localStorage.getItem("admin_token");
@@ -137,7 +101,6 @@ export default function ManageProducts() {
       formData.append("description", product.description || "");
       formData.append("subCategory", product.subCategory || "");
       formData.append("isHidden", nextHidden ? "true" : "false");
-
       if (product.category === "altars") {
         formData.append("altarSize", product.altarSize || "");
         formData.append("altarDesign", product.altarDesign || "");
@@ -145,29 +108,23 @@ export default function ManageProducts() {
 
       const response = await fetch(
         API_ENDPOINTS.admin.updateProduct(product.category, product.id),
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: formData,
-        }
+        { method: "PUT", headers: { Authorization: `Bearer ${token}` }, body: formData }
       );
-
       const data = await response.json();
 
       if (data.success) {
         setMessage({
           type: "success",
-          text: nextHidden ? "✅ Product hidden from customers" : "✅ Product is now visible to customers",
+          text: nextHidden
+            ? "✅ Product hidden from customers"
+            : "✅ Product is now visible to customers",
         });
         fetchAllProducts();
         setTimeout(() => setMessage({ type: "", text: "" }), 2500);
       } else {
         setMessage({ type: "error", text: data.message || "Failed to update visibility" });
       }
-    } catch (err) {
-      console.error("Toggle hidden error:", err);
+    } catch {
       setMessage({ type: "error", text: "Failed to update visibility" });
     }
   };
@@ -181,72 +138,49 @@ export default function ManageProducts() {
     setSelectedCategory("all");
   };
 
-  // Memoized filtered products
   const filteredProducts = useMemo(() => {
     let filtered = products;
 
     if (selectedCategory !== "all") {
-      filtered = filtered.filter(p => p.category === selectedCategory);
+      filtered = filtered.filter((p) => p.category === selectedCategory);
     }
 
-    if (searchQuery.trim() !== "") {
+    if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
-      filtered = filtered.filter(p => {
-        const matchesName = p.name?.toLowerCase().includes(query);
-        const matchesCategory = p.category?.toLowerCase().includes(query);
-        const matchesSubCategory = p.subCategory?.toLowerCase().includes(query);
-        const matchesPrice = p.price?.toString().includes(query);
-        const matchesProductId = p.id?.toString().includes(query);
-        // Search in altar specifications
-        const matchesAltarSize = p.altarSize?.toLowerCase().includes(query);
-        const matchesAltarDesign = p.altarDesign?.toLowerCase().includes(query);
-        return matchesName || matchesCategory || matchesSubCategory || matchesPrice || matchesProductId || matchesAltarSize || matchesAltarDesign;
-      });
+      filtered = filtered.filter((p) =>
+        p.name?.toLowerCase().includes(query) ||
+        p.category?.toLowerCase().includes(query) ||
+        p.subCategory?.toLowerCase().includes(query) ||
+        p.price?.toString().includes(query) ||
+        p.id?.toString().includes(query) ||
+        p.altarSize?.toLowerCase().includes(query) ||
+        p.altarDesign?.toLowerCase().includes(query)
+      );
     }
 
     return filtered;
   }, [products, selectedCategory, searchQuery]);
 
-  // Pagination calculations
   const totalPages = Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE);
   const startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
-  const endIndex = startIndex + PRODUCTS_PER_PAGE;
-  const currentProducts = filteredProducts.slice(startIndex, endIndex);
+  const currentProducts = filteredProducts.slice(startIndex, startIndex + PRODUCTS_PER_PAGE);
 
-  // Pagination helper functions
   const goToPage = (page) => {
     setCurrentPage(Math.max(1, Math.min(page, totalPages)));
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const getPageNumbers = () => {
     const pages = [];
-    const maxVisible = 5;
-    
-    if (totalPages <= maxVisible) {
-      for (let i = 1; i <= totalPages; i++) {
-        pages.push(i);
-      }
+    if (totalPages <= 5) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else if (currentPage <= 3) {
+      [1, 2, 3, 4, "...", totalPages].forEach((p) => pages.push(p));
+    } else if (currentPage >= totalPages - 2) {
+      [1, "...", totalPages - 3, totalPages - 2, totalPages - 1, totalPages].forEach((p) => pages.push(p));
     } else {
-      if (currentPage <= 3) {
-        for (let i = 1; i <= 4; i++) pages.push(i);
-        pages.push('...');
-        pages.push(totalPages);
-      } else if (currentPage >= totalPages - 2) {
-        pages.push(1);
-        pages.push('...');
-        for (let i = totalPages - 3; i <= totalPages; i++) pages.push(i);
-      } else {
-        pages.push(1);
-        pages.push('...');
-        pages.push(currentPage - 1);
-        pages.push(currentPage);
-        pages.push(currentPage + 1);
-        pages.push('...');
-        pages.push(totalPages);
-      }
+      [1, "...", currentPage - 1, currentPage, currentPage + 1, "...", totalPages].forEach((p) => pages.push(p));
     }
-    
     return pages;
   };
 
@@ -269,12 +203,11 @@ export default function ManageProducts() {
           </div>
           <div className="header-stats">
             <div className="stat-badge">
-              📦 {filteredProducts.length} {selectedCategory !== "all" || searchQuery ? "Found" : "Total"}
+              📦 {filteredProducts.length}{" "}
+              {selectedCategory !== "all" || searchQuery ? "Found" : "Total"}
             </div>
-            {filteredProducts.length > PRODUCTS_PER_PAGE && totalPages > 0 && (
-              <div className="stat-badge">
-                Page {currentPage} of {totalPages}
-              </div>
+            {totalPages > 1 && (
+              <div className="stat-badge">Page {currentPage} of {totalPages}</div>
             )}
           </div>
         </div>
@@ -290,11 +223,7 @@ export default function ManageProducts() {
               className="search-input"
             />
             {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="clear-search-btn"
-                title="Clear search"
-              >
+              <button onClick={() => setSearchQuery("")} className="clear-search-btn" title="Clear search">
                 ✕
               </button>
             )}
@@ -307,10 +236,8 @@ export default function ManageProducts() {
               onChange={(e) => setSelectedCategory(e.target.value)}
               className="category-select"
             >
-              {CATEGORIES.map(cat => (
-                <option key={cat.value} value={cat.value}>
-                  {cat.label}
-                </option>
+              {CATEGORIES.map((cat) => (
+                <option key={cat.value} value={cat.value}>{cat.label}</option>
               ))}
             </select>
           </div>
@@ -333,7 +260,7 @@ export default function ManageProducts() {
             )}
             {selectedCategory !== "all" && (
               <span className="filter-chip">
-                Category: {CATEGORIES.find(c => c.value === selectedCategory)?.label}
+                Category: {CATEGORIES.find((c) => c.value === selectedCategory)?.label}
                 <button onClick={() => setSelectedCategory("all")}>✕</button>
               </span>
             )}
@@ -342,9 +269,7 @@ export default function ManageProducts() {
       </div>
 
       {message.text && (
-        <div className={`message message-${message.type}`}>
-          {message.text}
-        </div>
+        <div className={`message message-${message.type}`}>{message.text}</div>
       )}
 
       <div className="products-table-wrapper">
@@ -375,32 +300,31 @@ export default function ManageProducts() {
                   >
                     <td>
                       {product.images?.[0]?.url ? (
-                        <img
-                          src={product.images[0].url}
-                          alt={product.name}
-                          className="product-thumb"
-                        />
+                        <img src={product.images[0].url} alt={product.name} className="product-thumb" />
                       ) : (
                         <div className="no-thumb">📦</div>
                       )}
                     </td>
+
                     <td className="product-name-cell">
                       {searchQuery && product.name?.toLowerCase().includes(searchQuery.toLowerCase()) ? (
                         <span
                           dangerouslySetInnerHTML={{
                             __html: product.name.replace(
-                              new RegExp(`(${searchQuery})`, 'gi'),
-                              '<mark>$1</mark>'
-                            )
+                              new RegExp(`(${searchQuery})`, "gi"),
+                              "<mark>$1</mark>"
+                            ),
                           }}
                         />
                       ) : (
                         product.name
                       )}
                     </td>
+
                     <td>
                       <span className="category-badge">{product.category}</span>
                     </td>
+
                     <td>
                       {product.subCategory ? (
                         <span className="subcategory-badge">{product.subCategory}</span>
@@ -408,6 +332,7 @@ export default function ManageProducts() {
                         <span className="no-data">—</span>
                       )}
                     </td>
+
                     <td>
                       {product.category === "altars" && (product.altarSize || product.altarDesign) ? (
                         <div className="specs-cell">
@@ -426,24 +351,27 @@ export default function ManageProducts() {
                         <span className="no-data">—</span>
                       )}
                     </td>
-                    <td className="price-cell">₹{product.price?.toLocaleString('en-IN') || '0'}</td>
+
+                    <td className="price-cell">
+                      ₹{product.price?.toLocaleString("en-IN") || "0"}
+                    </td>
+
                     <td className="text-center">
                       <span className="count-badge">{product.images?.length || 0}</span>
                     </td>
+
                     <td className="text-center">
-                      {product.video ? (
-                        <span className="badge-success">✅</span>
-                      ) : (
-                        <span className="badge-warning">❌</span>
-                      )}
+                      <span className={product.video ? "badge-success" : "badge-warning"}>
+                        {product.video ? "✅" : "❌"}
+                      </span>
                     </td>
+
                     <td className="text-center">
-                      {product.hasModel ? (
-                        <span className="badge-success">✅</span>
-                      ) : (
-                        <span className="badge-warning">❌</span>
-                      )}
+                      <span className={product.hasModel ? "badge-success" : "badge-warning"}>
+                        {product.hasModel ? "✅" : "❌"}
+                      </span>
                     </td>
+
                     <td className="text-center">
                       {product.isHidden ? (
                         <span className="badge-warning" title="Hidden from customers">🙈 Hidden</span>
@@ -451,13 +379,11 @@ export default function ManageProducts() {
                         <span className="badge-success" title="Visible to customers">👁️ Visible</span>
                       )}
                     </td>
+
                     <td>
                       <div className="action-buttons">
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleProductClick(product);
-                          }}
+                          onClick={(e) => { e.stopPropagation(); handleProductClick(product); }}
                           className="btn-edit"
                           title="Edit product"
                         >
@@ -484,7 +410,6 @@ export default function ManageProducts() {
               </tbody>
             </table>
 
-            {/* Pagination Controls */}
             {totalPages > 1 && (
               <div className="pagination-container">
                 <button
@@ -496,21 +421,19 @@ export default function ManageProducts() {
                 </button>
 
                 <div className="pagination-numbers">
-                  {getPageNumbers().map((page, index) => (
-                    page === '...' ? (
-                      <span key={`ellipsis-${index}`} className="pagination-ellipsis">
-                        ...
-                      </span>
+                  {getPageNumbers().map((page, index) =>
+                    page === "..." ? (
+                      <span key={`ellipsis-${index}`} className="pagination-ellipsis">...</span>
                     ) : (
                       <button
                         key={page}
                         onClick={() => goToPage(page)}
-                        className={`pagination-number ${currentPage === page ? 'active' : ''}`}
+                        className={`pagination-number ${currentPage === page ? "active" : ""}`}
                       >
                         {page}
                       </button>
                     )
-                  ))}
+                  )}
                 </div>
 
                 <button

@@ -19,33 +19,17 @@ export default function Upload() {
 
   // Amazon-style description fields
   const [tagline, setTagline] = useState("");
-  const [features, setFeatures] = useState([""]); // bullet points
-  const [specs, setSpecs] = useState([{ key: "", value: "" }]); // spec table rows
+  const [features, setFeatures] = useState("");
+  const [specs, setSpecs] = useState([{ key: "", value: "" }]);
 
   // Altar-specific specifications
   const [altarSize, setAltarSize] = useState("");
   const [altarDesign, setAltarDesign] = useState("");
 
   const [hidePrice, setHidePrice] = useState(false);
-
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState("");
   const [isUploading, setIsUploading] = useState(false);
-
-  // ─── Feature bullets ───────────────────────────────────────────
-  const handleFeatureChange = (index, value) => {
-    setFeatures((prev) => prev.map((f, i) => (i === index ? value : f)));
-  };
-
-  const addFeature = () => {
-    if (features.length >= 10) return;
-    setFeatures((prev) => [...prev, ""]);
-  };
-
-  const removeFeature = (index) => {
-    if (features.length === 1) return; // keep at least one
-    setFeatures((prev) => prev.filter((_, i) => i !== index));
-  };
 
   // ─── Spec table ────────────────────────────────────────────────
   const handleSpecChange = (index, field, value) => {
@@ -123,17 +107,18 @@ export default function Upload() {
     if (!name || !price) { alert("Name and price are required"); return; }
     if (includeModel && !model) { alert("Please upload a 3D model or uncheck the option"); return; }
     if (images.length === 0) { alert("Please upload at least one image"); return; }
+
     const hasSubCategories = CATEGORIES_OBJECT[category]?.subCategories?.length > 0;
     if (hasSubCategories && !subCategory) { alert("Please select a subcategory"); return; }
+
     if (category === "altars") {
       if (!altarSize) { alert("Please select an altar size"); return; }
       if (!altarDesign) { alert("Please select an altar design"); return; }
     }
 
-    // Serialize rich description as JSON
     const descriptionData = {
       tagline: tagline.trim(),
-      features: features.map((f) => f.trim()).filter(Boolean),
+      features: features.trim(),
       specs: specs.filter((s) => s.key.trim() && s.value.trim()),
     };
 
@@ -196,7 +181,7 @@ export default function Upload() {
     setName("");
     setPrice("");
     setTagline("");
-    setFeatures([""]);
+    setFeatures("");
     setSpecs([{ key: "", value: "" }]);
     setCategory("altars");
     setSubCategory("");
@@ -219,7 +204,8 @@ export default function Upload() {
         </div>
 
         <div className="upload-form">
-          {/* CHECKBOX FOR MODEL UPLOAD */}
+
+          {/* 3D MODEL TOGGLE */}
           <div className="checkbox-section">
             <label className="checkbox-label">
               <input
@@ -233,7 +219,7 @@ export default function Upload() {
             </label>
           </div>
 
-          {/* MODEL UPLOAD (CONDITIONAL) */}
+          {/* MODEL UPLOAD */}
           {includeModel && (
             <div className="file-section">
               <label className="file-label">
@@ -258,7 +244,7 @@ export default function Upload() {
             </div>
           )}
 
-          {/* MULTIPLE IMAGES UPLOAD */}
+          {/* IMAGES UPLOAD */}
           <div className="file-section">
             <label className="images-label">
               <div className="images-upload-area">
@@ -281,7 +267,7 @@ export default function Upload() {
             )}
           </div>
 
-          {/* VIDEO UPLOAD (OPTIONAL) */}
+          {/* VIDEO UPLOAD */}
           <div className="file-section">
             <label className="file-label">
               {videoPreview ? (
@@ -349,6 +335,7 @@ export default function Upload() {
             </div>
           )}
 
+          {/* ALTAR SPECIFICATIONS */}
           {category === "altars" && (
             <div className="altar-specifications-section">
               <h3 className="altar-specifications-title">Altar Specifications</h3>
@@ -373,7 +360,7 @@ export default function Upload() {
             </div>
           )}
 
-          {/* ─── AMAZON-STYLE DESCRIPTION ─────────────────────────── */}
+          {/* PRODUCT DESCRIPTION */}
           <div className="description-section">
             <h3 className="description-section-title">📝 Product Description</h3>
 
@@ -392,41 +379,20 @@ export default function Upload() {
               <span className="placeholder-hint">{tagline.length}/120 characters</span>
             </div>
 
-            {/* Bullet Features */}
+            {/* Features */}
             <div className="form-group">
               <label className="label">
-                Key Features
-                <span className="label-hint">shown as bullet points on product page</span>
+                About this Item
+                <span className="label-hint">shown as a description on the product page</span>
               </label>
-              <div className="features-list">
-                {features.map((feature, index) => (
-                  <div key={index} className="feature-row">
-                    <span className="feature-bullet">•</span>
-                    <input
-                      type="text"
-                      value={feature}
-                      onChange={(e) => handleFeatureChange(index, e.target.value)}
-                      placeholder={`Feature ${index + 1}, e.g. "Hand-carved teak wood"`}
-                      className="form-input feature-input"
-                      disabled={isUploading}
-                    />
-                    <button
-                      type="button"
-                      className="remove-feature-btn"
-                      onClick={() => removeFeature(index)}
-                      disabled={isUploading || features.length === 1}
-                      title="Remove"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                ))}
-              </div>
-              {features.length < 10 && (
-                <button type="button" className="add-row-btn" onClick={addFeature} disabled={isUploading}>
-                  + Add Feature
-                </button>
-              )}
+              <textarea
+                value={features}
+                onChange={(e) => setFeatures(e.target.value)}
+                placeholder="Enter product description, features, pricing options, materials, etc."
+                className="form-input"
+                rows={10}
+                disabled={isUploading}
+              />
             </div>
 
             {/* Specifications Table */}
@@ -478,7 +444,6 @@ export default function Upload() {
               )}
             </div>
           </div>
-          {/* ─────────────────────────────────────────────────────── */}
 
           {/* PROGRESS */}
           {progress > 0 && (
@@ -506,6 +471,7 @@ export default function Upload() {
               {isUploading ? "Uploading..." : "Upload Product"}
             </button>
           </div>
+
         </div>
       </div>
     </div>

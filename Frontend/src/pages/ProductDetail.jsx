@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getCategoryLabel } from "../config/categories";
 import { API_ENDPOINTS } from "../config/api";
@@ -9,24 +9,33 @@ import { Helmet } from "react-helmet-async";
 export default function ProductDetail() {
   const { category, id } = useParams();
   const navigate = useNavigate();
-  
+
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [modelLoading, setModelLoading] = useState(true);
   const [modelError, setModelError] = useState(false);
   const [showModel, setShowModel] = useState(false);
-  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [showVideo, setShowVideo] = useState(false);
-  
+
+  // ─── Carousel state ────────────────────────────────────────────
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [prevIndex, setPrevIndex] = useState(null);
+  const [slideDirection, setSlideDirection] = useState("right");
+  const [isAnimating, setIsAnimating] = useState(false);
+  const animationTimer = useRef(null);
+
+  // ─── Touch state ───────────────────────────────────────────────
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
 
   const WHATSAPP_NUMBER = "919713600059";
+  const ANIMATION_DURATION = 350;
   const minSwipeDistance = 50;
 
   useEffect(() => {
     fetchProduct();
+    return () => clearTimeout(animationTimer.current);
   }, [category, id]);
 
   const fetchProduct = async () => {
@@ -48,24 +57,21 @@ export default function ProductDetail() {
     }
   };
 
-  // ─── Parse description: JSON (new) or plain text (legacy) ────────
+  // ─── Description parser ────────────────────────────────────────
   const parseDescription = (raw) => {
     if (!raw) return null;
     try {
       const parsed = JSON.parse(raw);
-      // Only treat as structured if it has at least one of our keys
       if (parsed.tagline || parsed.features || parsed.specs) return parsed;
-    } catch {
-      // Not JSON — fall through to plain text
-    }
+    } catch { /* fall through */ }
     return { plainText: raw };
   };
 
   const formatPrice = (price) => {
     if (product.hidePrice) return "📞 Call / WhatsApp: +91 97136 00059";
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
       maximumFractionDigits: 0,
     }).format(price);
   };
@@ -82,30 +88,51 @@ export default function ProductDetail() {
 🔗 Product Link: ${productUrl}
 
 Please provide more details about availability and delivery.`;
-    const encodedMessage = encodeURIComponent(message);
-    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodedMessage}`, '_blank');
+    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`, "_blank");
   };
 
-  const handleModelLoad = () => { setModelLoading(false); setModelError(false); };
-  const handleModelError = () => { setModelLoading(false); setModelError(true); };
+  // ─── Carousel helpers ──────────────────────────────────────────
+  const slideTo = (nextIndex, direction) => {
+    if (isAnimating || !product?.images) return;
+    if (nextIndex === currentIndex) return;
+    setSlideDirection(direction);
+    setPrevIndex(currentIndex);
+    setCurrentIndex(nextIndex);
+    setIsAnimating(true);
+    clearTimeout(animationTimer.current);
+    animationTimer.current = setTimeout(() => {
+      setPrevIndex(null);
+      setIsAnimating(false);
+    }, ANIMATION_DURATION);
+  };
 
+  const goToNext = () => {
+    const next = currentIndex < product.images.length - 1 ? currentIndex + 1 : 0;
+    slideTo(next, "right");
+  };
+
+  const goToPrev = () => {
+    const prev = currentIndex > 0 ? currentIndex - 1 : product.images.length - 1;
+    slideTo(prev, "left");
+  };
+
+  const goToIndex = (index) => {
+    if (index === currentIndex) return;
+    slideTo(index, index > currentIndex ? "right" : "left");
+  };
+
+  // ─── Touch handlers ────────────────────────────────────────────
   const onTouchStart = (e) => { setTouchEnd(0); setTouchStart(e.targetTouches[0].clientX); };
-  const onTouchMove = (e) => { setTouchEnd(e.targetTouches[0].clientX); };
-  const onTouchEnd = () => {
+  const onTouchMove  = (e) => { setTouchEnd(e.targetTouches[0].clientX); };
+  const onTouchEnd   = () => {
     if (!touchStart || !touchEnd) return;
     const distance = touchStart - touchEnd;
-    if (distance > minSwipeDistance && product.images)
-      setSelectedImageIndex((prev) => prev < product.images.length - 1 ? prev + 1 : 0);
-    if (distance < -minSwipeDistance && product.images)
-      setSelectedImageIndex((prev) => prev > 0 ? prev - 1 : product.images.length - 1);
+    if (distance >  minSwipeDistance) goToNext();
+    if (distance < -minSwipeDistance) goToPrev();
   };
 
-  const goToNextImage = () => {
-    if (product.images) setSelectedImageIndex((prev) => prev < product.images.length - 1 ? prev + 1 : 0);
-  };
-  const goToPreviousImage = () => {
-    if (product.images) setSelectedImageIndex((prev) => prev > 0 ? prev - 1 : product.images.length - 1);
-  };
+  const handleModelLoad  = () => { setModelLoading(false); setModelError(false); };
+  const handleModelError = () => { setModelLoading(false); setModelError(true); };
 
   if (loading) {
     return (
@@ -122,7 +149,7 @@ Please provide more details about availability and delivery.`;
         <div className="error-icon">❌</div>
         <h2>Product Not Found</h2>
         <p>{error || "The product you're looking for doesn't exist."}</p>
-        <button onClick={() => navigate('/catalog')} className="back-btn">← Back to Catalog</button>
+        <button onClick={() => navigate("/catalog")} className="back-btn">← Back to Catalog</button>
       </div>
     );
   }
@@ -140,6 +167,7 @@ Please provide more details about availability and delivery.`;
       <button onClick={() => navigate(-1)} className="back-button">← Back</button>
 
       <div className="product-detail-wrapper">
+
         {/* ── LEFT: Viewer ── */}
         <div className="viewer-section">
           {showModel && product.hasModel ? (
@@ -181,6 +209,7 @@ Please provide more details about availability and delivery.`;
               )}
               <button className="toggle-view-btn" onClick={() => setShowModel(false)}>← Back to Gallery</button>
             </div>
+
           ) : showVideo && product.video ? (
             <div className="video-viewer-container">
               <video src={product.video} controls className="product-video-player" poster={product.images?.[0]?.url}>
@@ -188,17 +217,49 @@ Please provide more details about availability and delivery.`;
               </video>
               <button className="toggle-view-btn" onClick={() => setShowVideo(false)}>← Back to Gallery</button>
             </div>
+
           ) : (
             <div className="image-gallery-container">
-              <div className="main-image-display" onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
+              <div
+                className="main-image-display"
+                onTouchStart={onTouchStart}
+                onTouchMove={onTouchMove}
+                onTouchEnd={onTouchEnd}
+              >
                 {product.images && product.images.length > 0 ? (
                   <>
-                    <img src={product.images[selectedImageIndex].url} alt={`${product.name} - Image ${selectedImageIndex + 1}`} className="main-product-image" />
+                    {/* Outgoing image */}
+                    {isAnimating && prevIndex !== null && (
+                      <img
+                        key={`prev-${prevIndex}`}
+                        src={product.images[prevIndex].url}
+                        alt={`${product.name} - Image ${prevIndex + 1}`}
+                        className={`main-product-image carousel-exit-${slideDirection}`}
+                      />
+                    )}
+                    {/* Incoming image */}
+                    <img
+                      key={`curr-${currentIndex}`}
+                      src={product.images[currentIndex].url}
+                      alt={`${product.name} - Image ${currentIndex + 1}`}
+                      className={`main-product-image ${isAnimating ? `carousel-enter-${slideDirection}` : ""}`}
+                    />
+
                     {product.images.length > 1 && (
                       <>
-                        <button className="image-nav-btn prev-btn" onClick={goToPreviousImage} aria-label="Previous image">‹</button>
-                        <button className="image-nav-btn next-btn" onClick={goToNextImage} aria-label="Next image">›</button>
-                        <div className="image-counter">{selectedImageIndex + 1} / {product.images.length}</div>
+                        <button className="image-nav-btn prev-btn" onClick={goToPrev} aria-label="Previous image">‹</button>
+                        <button className="image-nav-btn next-btn" onClick={goToNext} aria-label="Next image">›</button>
+                        <div className="image-counter">{currentIndex + 1} / {product.images.length}</div>
+                        <div className="carousel-dots">
+                          {product.images.map((_, i) => (
+                            <button
+                              key={i}
+                              className={`carousel-dot ${i === currentIndex ? "active" : ""}`}
+                              onClick={() => goToIndex(i)}
+                              aria-label={`Go to image ${i + 1}`}
+                            />
+                          ))}
+                        </div>
                       </>
                     )}
                   </>
@@ -213,7 +274,11 @@ Please provide more details about availability and delivery.`;
               {product.images && product.images.length > 1 && (
                 <div className="thumbnail-gallery">
                   {product.images.map((image, index) => (
-                    <div key={index} className={`thumbnail ${selectedImageIndex === index ? 'active' : ''}`} onClick={() => setSelectedImageIndex(index)}>
+                    <div
+                      key={index}
+                      className={`thumbnail ${currentIndex === index ? "active" : ""}`}
+                      onClick={() => goToIndex(index)}
+                    >
                       <img src={image.url} alt={`Thumbnail ${index + 1}`} />
                     </div>
                   ))}
@@ -242,7 +307,6 @@ Please provide more details about availability and delivery.`;
 
           <h1 className="product-title">{product.name}</h1>
 
-          {/* Tagline */}
           {description?.tagline && (
             <p className="product-tagline">{description.tagline}</p>
           )}
@@ -252,15 +316,11 @@ Please provide more details about availability and delivery.`;
             <span className="product-price-value">{formatPrice(product.price)}</span>
           </div>
 
-          {/* Key Features */}
-          {description?.features?.length > 0 && (
+          {/* Features — plain pre-wrap text */}
+          {description?.features && (
             <div className="product-features-section">
               <h3>About this item</h3>
-              <ul className="product-features-list">
-                {description.features.map((feature, i) => (
-                  <li key={i}>{feature}</li>
-                ))}
-              </ul>
+              <p className="product-features-text">{description.features}</p>
             </div>
           )}
 
@@ -281,7 +341,7 @@ Please provide more details about availability and delivery.`;
             </div>
           )}
 
-          {/* Legacy plain-text description fallback */}
+          {/* Legacy plain-text fallback */}
           {description?.plainText && (
             <div className="product-description-section">
               <h3>Description</h3>
@@ -317,12 +377,13 @@ Please provide more details about availability and delivery.`;
               <span>💬</span> Order via WhatsApp
             </button>
             {product.hasModel && (
-              <button className="btn-secondary" onClick={() => window.open(product.model, '_blank')}>
+              <button className="btn-secondary" onClick={() => window.open(product.model, "_blank")}>
                 <span>📥</span> Download Model
               </button>
             )}
           </div>
         </div>
+
       </div>
     </div>
   );

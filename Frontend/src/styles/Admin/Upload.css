@@ -632,30 +632,6 @@
   border-bottom: 2px solid rgba(217, 119, 6, 0.15);
 }
 
-/* Feature bullet rows */
-.features-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-bottom: 10px;
-}
-
-.feature-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.feature-bullet {
-  font-size: 1.3rem;
-  color: #d97706;
-  flex-shrink: 0;
-  line-height: 1;
-}
-
-.feature-input {
-  flex: 1;
-}
 
 /* Spec table rows */
 .specs-table {
@@ -845,9 +821,6 @@
     gap: 6px;
   }
 
-  .feature-row {
-    gap: 6px;
-  }
 }
 
 /* ================================
