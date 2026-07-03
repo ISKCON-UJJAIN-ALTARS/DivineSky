@@ -5,18 +5,17 @@ const {
   uploadToR2,
   getJsonFromR2,
   putJsonToR2,
-  deleteFromR2,
 } = require("../services/r2.service");
 
 const router = express.Router();
 
 /**
- * 🔐 PUT /admin/products/:category/:id
- * Update existing product - FIXED for category changes + Ready Stock support + Altar Specifications + isHidden
- * ✅ UPDATED: Now supports altar specifications and isHidden flag
+ * 🔐 POST /admin/upload
+ * Upload product with optional GLB model, 1-5 images, optional video, subcategory, and altar specifications
+ * ✅ UPDATED: Now supports subcategories, altar specifications, and isHidden flag
  */
-router.put(
-  "/products/:category/:id",
+router.post(
+  "/upload",
   auth,
   upload.fields([
     { name: "model", maxCount: 1 },
@@ -25,46 +24,55 @@ router.put(
   ]),
   async (req, res) => {
     try {
-      const { category, id } = req.params;
-      const { 
-        name, 
-        price, 
-        description, 
-        includeModel, 
-        removeModel, 
-        removeVideo,
-        replaceImages,
-        newCategory,
-        subCategory,
-        // Ready Stock fields
-        inReadyStock,
-        readyStockQuantity,
-        // ✅ Altar specifications
-        altarSize,
-        altarDesign,
-        // ✅ NEW: Hide product from customers
-        isHidden,
-        // ✅ NEW: Hide price, show Call/WhatsApp instead
-        hidePrice
-      } = req.body;
-      
-      console.log("=== UPDATE PRODUCT REQUEST ===");
-      console.log("Product ID:", id);
-      console.log("Current Category:", category);
-      console.log("New Category:", newCategory);
-      console.log("Ready Stock:", inReadyStock, "Quantity:", readyStockQuantity);
-      console.log("Altar Size:", altarSize);
-      console.log("Altar Design:", altarDesign);
-      console.log("Is Hidden:", isHidden);
-      console.log("Hide Price:", hidePrice);
-      console.log("Request body:", req.body);
+      console.log("📦 Admin upload request received");
 
-      // Check if changing category
-      const isChangingCategory = newCategory && newCategory !== category;
-      const targetCategory = isChangingCategory ? newCategory : category;
-      
-      // ✅ Validate altar specifications if target category is altars
-      if (targetCategory === "altars") {
+      const {
+        name,
+        price,
+        description,
+        category,
+        subCategory,
+        includeModel,
+        altarSize,      // ✅ Altar size
+        altarDesign,    // ✅ Altar design
+        isHidden,       // ✅ Hide product from customers
+        hidePrice       // ✅ Hide price, show Call/WhatsApp instead
+      } = req.body;
+
+      const modelFile = req.files?.model?.[0];
+      const imageFiles = req.files?.images || [];
+      const videoFile = req.files?.video?.[0];
+
+      console.log("Body:", req.body);
+      console.log("Files:", req.files);
+
+      // Validate required fields
+      if (!name || !price || !category) {
+        return res.status(400).json({
+          success: false,
+          message: "Missing required fields: name, price, and category are required",
+        });
+      }
+
+      // Validate that at least one image is provided
+      if (imageFiles.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "At least one image is required",
+        });
+      }
+
+      // Validate category
+      const validCategories = ["altars", "deities", "sculptures", "Laser_Engravings", "furniture", "tulsi_table_vyasasna", "mridanga_stand", "Prabhupada_altars", "temple_altar"];
+      if (!validCategories.includes(category)) {
+        return res.status(400).json({
+          success: false,
+          message: `Invalid category. Must be one of: ${validCategories.join(", ")}`,
+        });
+      }
+
+      // Validate altar specifications if category is altars
+      if (category === "altars") {
         if (!altarSize || !altarDesign) {
           return res.status(400).json({
             success: false,
@@ -72,557 +80,157 @@ router.put(
           });
         }
       }
-      
-      // Load existing product data from CURRENT category
-      const jsonKey = `products/${category}.json`;
-      let data = await getJsonFromR2(jsonKey);
 
-      if (!data || !data.products[id]) {
-        return res.status(404).json({
+      // Validate price
+      const parsedPrice = parseFloat(price);
+      if (isNaN(parsedPrice) || parsedPrice <= 0) {
+        return res.status(400).json({
           success: false,
-          message: "Product not found in current category",
+          message: "Price must be a positive number",
         });
       }
 
-      const existingProduct = data.products[id];
-      const modelFile = req.files?.model?.[0];
-      const imageFiles = req.files?.images || [];
-      const videoFile = req.files?.video?.[0];
+      // Check if user wants to include model
+      const shouldIncludeModel = includeModel === "true" || includeModel === true;
 
-      // ========================================
-      // UPDATE TEXT FIELDS - ALWAYS UPDATE
-      // ========================================
-      
-      // ✅ ALWAYS update name
-      if (name !== undefined && name.trim() !== "") {
-        existingProduct.name = name.trim();
-        console.log("Updated name:", existingProduct.name);
-      }
-      
-      // ✅ ALWAYS update price
-      if (price !== undefined && price !== "") {
-        const parsedPrice = parseFloat(price);
-        if (isNaN(parsedPrice) || parsedPrice < 0) {
-          return res.status(400).json({
-            success: false,
-            message: "Price must be a valid number",
-          });
-        }
-        existingProduct.price = parsedPrice;
-        console.log("Updated price:", existingProduct.price);
-      }
-      
-      // ✅ ALWAYS update description
-      if (description !== undefined) {
-        existingProduct.description = description.trim();
-        console.log("Updated description:", existingProduct.description.substring(0, 50) + "...");
+      // Check if product should be hidden from customers
+      const shouldBeHidden = isHidden === "true" || isHidden === true;
+
+      // Check if price should be hidden (show Call/WhatsApp instead)
+      const shouldHidePrice = hidePrice === "true" || hidePrice === true;
+
+      // Upload model to R2 if provided and checkbox is checked
+      let modelResult = null;
+      if (shouldIncludeModel && modelFile) {
+        console.log("📦 Uploading 3D model...");
+        modelResult = await uploadToR2(modelFile, category);
       }
 
-      // ✅ ALWAYS update subcategory
-      existingProduct.subCategory = subCategory || null;
-      console.log("Updated subcategory:", existingProduct.subCategory);
-
-      // ✅ NEW: ALWAYS update isHidden flag
-      existingProduct.isHidden = isHidden === "true" || isHidden === true;
-      console.log("Updated isHidden:", existingProduct.isHidden);
-
-      // ✅ NEW: ALWAYS update hidePrice flag
-      existingProduct.hidePrice = hidePrice === "true" || hidePrice === true;
-      console.log("Updated hidePrice:", existingProduct.hidePrice);
-
-      // ✅ Update altar specifications
-      if (targetCategory === "altars") {
-        existingProduct.altarSize = altarSize;
-        existingProduct.altarDesign = altarDesign;
-        console.log("Updated altar size:", existingProduct.altarSize);
-        console.log("Updated altar design:", existingProduct.altarDesign);
-      } else {
-        // Remove altar specifications if moving away from altars category
-        delete existingProduct.altarSize;
-        delete existingProduct.altarDesign;
-        console.log("Removed altar specifications (not an altar product)");
+      // Upload all images
+      console.log(`📸 Uploading ${imageFiles.length} images...`);
+      const imageResults = [];
+      for (const imageFile of imageFiles) {
+        const result = await uploadToR2(imageFile, category);
+        imageResults.push({
+          url: result.url,
+          size: result.size,
+          mimetype: result.mimetype,
+        });
       }
 
-      // ✅ Update category field in product object
-      if (isChangingCategory) {
-        existingProduct.category = newCategory;
-        console.log("Updated category in product:", existingProduct.category);
-      } else {
-        // Ensure category field is correct even when not changing
-        existingProduct.category = category;
-      }
-
-      // ========================================
-      // HANDLE MODEL
-      // ========================================
-      
-      // Remove model
-      if (removeModel === "true" && existingProduct.model) {
-        console.log("Removing existing model");
-        await deleteFromR2(existingProduct.model);
-        delete existingProduct.model;
-        delete existingProduct.modelSize;
-        delete existingProduct.modelType;
-        existingProduct.hasModel = false;
-      }
-
-      // Upload/Replace model
-      if (includeModel === "true" && modelFile) {
-        console.log("Uploading new model");
-        
-        // Delete old model if exists
-        if (existingProduct.model) {
-          await deleteFromR2(existingProduct.model);
-        }
-
-        // Upload to target category
-        const uploadCategory = isChangingCategory ? newCategory : category;
-        const modelResult = await uploadToR2(modelFile, uploadCategory);
-        existingProduct.model = modelResult.url;
-        existingProduct.modelSize = modelResult.size;
-        existingProduct.modelType = modelResult.mimetype;
-        existingProduct.hasModel = true;
-      }
-
-      // ========================================
-      // HANDLE VIDEO
-      // ========================================
-      
-      // Remove video
-      if (removeVideo === "true" && existingProduct.video) {
-        console.log("Removing existing video");
-        await deleteFromR2(existingProduct.video);
-        delete existingProduct.video;
-        delete existingProduct.videoSize;
-        delete existingProduct.videoType;
-      }
-
-      // Upload/Replace video
+      // Upload video if provided
+      let videoResult = null;
       if (videoFile) {
-        console.log("Uploading new video");
-        
-        // Delete old video if exists
-        if (existingProduct.video) {
-          await deleteFromR2(existingProduct.video);
-        }
-
-        // Upload to target category
-        const uploadCategory = isChangingCategory ? newCategory : category;
-        const videoResult = await uploadToR2(videoFile, uploadCategory);
-        existingProduct.video = videoResult.url;
-        existingProduct.videoSize = videoResult.size;
-        existingProduct.videoType = videoResult.mimetype;
+        console.log("🎥 Uploading video...");
+        videoResult = await uploadToR2(videoFile, category);
       }
 
-      // ========================================
-      // HANDLE IMAGES
-      // ========================================
-      
-      if (imageFiles.length > 0) {
-        const uploadCategory = isChangingCategory ? newCategory : category;
-        
-        if (replaceImages === "true") {
-          // Replace all images
-          console.log("Replacing all images");
-          
-          // Delete old images
-          if (existingProduct.images && Array.isArray(existingProduct.images)) {
-            for (const image of existingProduct.images) {
-              await deleteFromR2(image.url);
-            }
-          }
-
-          // Upload new images
-          const imageResults = [];
-          for (const imageFile of imageFiles) {
-            const result = await uploadToR2(imageFile, uploadCategory);
-            imageResults.push({
-              url: result.url,
-              size: result.size,
-              mimetype: result.mimetype,
-            });
-          }
-          existingProduct.images = imageResults;
-        } else {
-          // Add to existing images
-          console.log("Adding new images to existing ones");
-          
-          if (!existingProduct.images) {
-            existingProduct.images = [];
-          }
-
-          const totalImages = existingProduct.images.length + imageFiles.length;
-          if (totalImages > 10) {
-            return res.status(400).json({
-              success: false,
-              message: `Cannot add ${imageFiles.length} images. Maximum 10 images total (currently ${existingProduct.images.length})`,
-            });
-          }
-
-          for (const imageFile of imageFiles) {
-            const result = await uploadToR2(imageFile, uploadCategory);
-            existingProduct.images.push({
-              url: result.url,
-              size: result.size,
-              mimetype: result.mimetype,
-            });
-          }
-        }
-      }
-
-      // Update timestamp
-      existingProduct.updated_at = new Date().toISOString();
-
-      // ========================================
-      // HANDLE CATEGORY CHANGE
-      // ========================================
-      
-      if (isChangingCategory) {
-        console.log(`=== MOVING PRODUCT FROM ${category} TO ${newCategory} ===`);
-        
-        // Load target category data
-        const newJsonKey = `products/${newCategory}.json`;
-        let newCategoryData = await getJsonFromR2(newJsonKey);
-        
-        // Initialize if doesn't exist
-        if (!newCategoryData) {
-          console.log("Creating new category file:", newJsonKey);
-          newCategoryData = {
-            category: newCategory,
-            products: {},
-            last_updated: new Date().toISOString(),
-          };
-        }
-
-        // Add to new category
-        newCategoryData.products[id] = existingProduct;
-        newCategoryData.last_updated = new Date().toISOString();
-        await putJsonToR2(newJsonKey, newCategoryData);
-        console.log(`✅ Product added to ${newCategory}`);
-
-        // Remove from old category
-        delete data.products[id];
-        data.last_updated = new Date().toISOString();
-        await putJsonToR2(jsonKey, data);
-        console.log(`✅ Product removed from ${category}`);
-
-        console.log("=== CATEGORY MOVE COMPLETE ===");
-      } else {
-        // ========================================
-        // SAVE CHANGES (Same Category)
-        // ========================================
-        
-        console.log("Saving changes to same category");
-        
-        // Save updated data
-        data.products[id] = existingProduct;
-        data.last_updated = new Date().toISOString();
-        await putJsonToR2(jsonKey, data);
-
-        console.log("✅ Product updated successfully");
-      }
-
-      // ========================================
-      // 🆕 HANDLE READY STOCK
-      // ========================================
-      
-      const readyStockKey = "products/ready-stock.json";
-      let readyStockData = await getJsonFromR2(readyStockKey);
-      
-      if (!readyStockData) {
-        readyStockData = {
-          products: {},
-          last_updated: new Date().toISOString(),
-        };
-      }
-
-      const isInReadyStock = readyStockData.products[id] !== undefined;
-      const shouldBeInReadyStock = inReadyStock === "true" || inReadyStock === true;
-
-      if (shouldBeInReadyStock) {
-        // Add or update in ready stock
-        const quantity = parseInt(readyStockQuantity) || 0;
-        
-        if (quantity <= 0) {
-          return res.status(400).json({
-            success: false,
-            message: "Ready stock quantity must be greater than 0",
-          });
-        }
-
-        readyStockData.products[id] = {
-          ...existingProduct,
-          quantity: quantity,
-          addedToStock: isInReadyStock 
-            ? readyStockData.products[id].addedToStock 
-            : new Date().toISOString(),
-          lastUpdated: new Date().toISOString(),
-        };
-
-        readyStockData.last_updated = new Date().toISOString();
-        await putJsonToR2(readyStockKey, readyStockData);
-        
-        console.log(`✅ Product ${isInReadyStock ? 'updated in' : 'added to'} ready stock with quantity: ${quantity}`);
-      } else if (isInReadyStock && !shouldBeInReadyStock) {
-        // Remove from ready stock
-        delete readyStockData.products[id];
-        readyStockData.last_updated = new Date().toISOString();
-        await putJsonToR2(readyStockKey, readyStockData);
-        
-        console.log("✅ Product removed from ready stock");
-      }
-
-      // ========================================
-      // SEND RESPONSE
-      // ========================================
-      
-      const responseMessage = isChangingCategory 
-        ? `Product moved to ${newCategory} and updated successfully`
-        : "Product updated successfully";
-
-      res.json({
-        success: true,
-        message: responseMessage,
-        product: existingProduct,
-        newCategory: isChangingCategory ? newCategory : undefined,
-        readyStock: shouldBeInReadyStock ? {
-          inStock: true,
-          quantity: parseInt(readyStockQuantity) || 0
-        } : {
-          inStock: false
-        }
-      });
-      
-    } catch (err) {
-      console.error("=== UPDATE ERROR ===");
-      console.error(err);
-      res.status(500).json({
-        success: false,
-        message: err.message || "Failed to update product",
-      });
-    }
-  }
-);
-
-/**
- * 🔐 PATCH /admin/products/:category/:id/remove-image
- * Remove a specific image by index
- */
-router.patch(
-  "/products/:category/:id/remove-image",
-  auth,
-  async (req, res) => {
-    try {
-      const { category, id } = req.params;
-      const { imageIndex } = req.body;
-
-      if (imageIndex === undefined) {
-        return res.status(400).json({
-          success: false,
-          message: "Image index is required",
-        });
-      }
-
-      console.log(`Removing image at index ${imageIndex} from product ${id}`);
-
-      // Load existing product
+      // Load existing category JSON
       const jsonKey = `products/${category}.json`;
       let data = await getJsonFromR2(jsonKey);
 
-      if (!data || !data.products[id]) {
-        return res.status(404).json({
-          success: false,
-          message: "Product not found",
-        });
+      if (!data) {
+        data = {
+          category,
+          last_updated: null,
+          total_products: 0,
+          products: {},
+        };
       }
 
-      const product = data.products[id];
+      // Generate product ID
+      const productId = `${category.toUpperCase()}-${Date.now()}`;
 
-      if (!product.images || !Array.isArray(product.images)) {
-        return res.status(400).json({
-          success: false,
-          message: "Product has no images",
-        });
+      // Build product object
+      const productData = {
+        id: productId,
+        name: name.trim(),
+        price: parsedPrice,
+        description: description?.trim() || "",
+        category,
+        subCategory: subCategory || null,
+        images: imageResults,
+        hasModel: !!modelResult,
+        isHidden: shouldBeHidden,
+        hidePrice: shouldHidePrice,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      // Add altar specifications if category is altars
+      if (category === "altars") {
+        productData.altarSize = altarSize;
+        productData.altarDesign = altarDesign;
       }
 
-      if (imageIndex < 0 || imageIndex >= product.images.length) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid image index",
-        });
+      // Add model data if it was uploaded
+      if (modelResult) {
+        productData.model = modelResult.url;
+        productData.modelSize = modelResult.size;
+        productData.modelType = modelResult.mimetype;
       }
 
-      // Delete the image from R2
-      const imageToDelete = product.images[imageIndex];
-      await deleteFromR2(imageToDelete.url);
+      // Add video data if it was uploaded
+      if (videoResult) {
+        productData.video = videoResult.url;
+        productData.videoSize = videoResult.size;
+        productData.videoType = videoResult.mimetype;
+      }
 
-      // Remove from array
-      product.images.splice(imageIndex, 1);
-      product.updated_at = new Date().toISOString();
+      // Add product
+      data.products[productId] = productData;
 
-      // Save
-      data.products[id] = product;
       data.last_updated = new Date().toISOString();
+      data.total_products = Object.keys(data.products).length;
+
+      // Save JSON back to R2
       await putJsonToR2(jsonKey, data);
 
-      res.json({
+      console.log("✅ Product uploaded successfully:", productId);
+      console.log("   Category:", category);
+      console.log("   SubCategory:", subCategory || "None");
+      console.log("   Hidden:", shouldBeHidden);
+      console.log("   Hide Price:", shouldHidePrice);
+      if (category === "altars") {
+        console.log("   Altar Size:", altarSize);
+        console.log("   Altar Design:", altarDesign);
+      }
+
+      res.status(201).json({
         success: true,
-        message: "Image removed successfully",
-        product: product,
+        message: "Product uploaded successfully",
+        product: data.products[productId],
       });
     } catch (err) {
-      console.error("Remove image error:", err);
+      console.error("❌ Admin upload error:", err);
       res.status(500).json({
         success: false,
-        message: err.message || "Failed to remove image",
+        message: err.message || "Upload failed",
       });
     }
   }
 );
 
 /**
- * 🔐 GET /admin/products/:category/:id
- * Get single product for editing (with ready stock info)
+ * 🔐 GET /admin/test-json/:category
  */
-router.get("/products/:category/:id", auth, async (req, res) => {
-  try {
-    const { category, id } = req.params;
-    const jsonKey = `products/${category}.json`;
-    const data = await getJsonFromR2(jsonKey);
+router.get("/test-json/:category", auth, async (req, res) => {
+  const { category } = req.params;
 
-    if (!data || !data.products[id]) {
-      return res.status(404).json({
-        success: false,
-        message: "Product not found",
-      });
-    }
+  const testData = {
+    category,
+    last_updated: new Date().toISOString(),
+    total_products: 0,
+    products: {},
+  };
 
-    // Ensure hasModel flag is set correctly
-    const product = data.products[id];
-    if (product.model && !product.hasModel) {
-      product.hasModel = true;
-    } else if (!product.model && product.hasModel) {
-      product.hasModel = false;
-    }
+  const jsonKey = `products/${category}.json`;
+  await putJsonToR2(jsonKey, testData);
 
-    // ✅ Ensure category field exists
-    if (!product.category) {
-      product.category = category;
-    }
-
-    // ✅ NEW: Ensure isHidden field exists (default to false for older products)
-    if (product.isHidden === undefined) {
-      product.isHidden = false;
-    }
-
-    // ✅ NEW: Ensure hidePrice field exists (default to false for older products)
-    if (product.hidePrice === undefined) {
-      product.hidePrice = false;
-    }
-
-    // 🆕 Check if in ready stock
-    const readyStockKey = "products/ready-stock.json";
-    const readyStockData = await getJsonFromR2(readyStockKey);
-    
-    let readyStockInfo = {
-      inReadyStock: false,
-      quantity: 0
-    };
-
-    if (readyStockData && readyStockData.products[id]) {
-      readyStockInfo = {
-        inReadyStock: true,
-        quantity: readyStockData.products[id].quantity,
-        addedToStock: readyStockData.products[id].addedToStock,
-        lastUpdated: readyStockData.products[id].lastUpdated
-      };
-    }
-
-    res.json({
-      success: true,
-      product: product,
-      readyStock: readyStockInfo
-    });
-  } catch (err) {
-    console.error("Fetch error:", err);
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch product",
-    });
-  }
-});
-
-/**
- * 🔐 DELETE /admin/products/:category/:id
- * Delete a product (also removes from ready stock)
- */
-router.delete("/products/:category/:id", auth, async (req, res) => {
-  try {
-    const { category, id } = req.params;
-    
-    console.log("Deleting product:", id, "from category:", category);
-
-    // Load existing product data
-    const jsonKey = `products/${category}.json`;
-    let data = await getJsonFromR2(jsonKey);
-
-    if (!data || !data.products[id]) {
-      return res.status(404).json({
-        success: false,
-        message: "Product not found",
-      });
-    }
-
-    const product = data.products[id];
-
-    // Delete all associated files from R2
-    // Delete images
-    if (product.images && Array.isArray(product.images)) {
-      console.log(`Deleting ${product.images.length} images`);
-      for (const image of product.images) {
-        await deleteFromR2(image.url);
-      }
-    }
-
-    // Delete model
-    if (product.model) {
-      console.log("Deleting model");
-      await deleteFromR2(product.model);
-    }
-
-    // Delete video
-    if (product.video) {
-      console.log("Deleting video");
-      await deleteFromR2(product.video);
-    }
-
-    // Remove product from JSON
-    delete data.products[id];
-    data.last_updated = new Date().toISOString();
-    await putJsonToR2(jsonKey, data);
-
-    // 🆕 Remove from ready stock if exists
-    const readyStockKey = "products/ready-stock.json";
-    const readyStockData = await getJsonFromR2(readyStockKey);
-    
-    if (readyStockData && readyStockData.products[id]) {
-      delete readyStockData.products[id];
-      readyStockData.last_updated = new Date().toISOString();
-      await putJsonToR2(readyStockKey, readyStockData);
-      console.log("✅ Product also removed from ready stock");
-    }
-
-    res.json({
-      success: true,
-      message: "Product deleted successfully",
-    });
-  } catch (err) {
-    console.error("Delete error:", err);
-    res.status(500).json({
-      success: false,
-      message: err.message || "Failed to delete product",
-    });
-  }
+  res.json({
+    success: true,
+    message: `Test JSON created for ${category}`,
+  });
 });
 
 module.exports = router;
