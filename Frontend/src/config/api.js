@@ -23,13 +23,17 @@ export const API_ENDPOINTS = {
   },
   
   // Admin
-  admin: {
-    upload: () => `${API_BASE_URL}/admin/upload`,
-    getProduct: (category, id) => `${API_BASE_URL}/admin/products/${category}/${id}`,
-    updateProduct: (category, id) => `${API_BASE_URL}/admin/products/${category}/${id}`,
-    deleteProduct: (category, id) => `${API_BASE_URL}/admin/products/${category}/${id}`,
-    removeImage: (category, id) => `${API_BASE_URL}/admin/products/${category}/${id}/remove-image`,
-  },
+ // Admin
+admin: {
+  upload: () => `${API_BASE_URL}/admin/upload`,
+  getProduct: (category, id) => `${API_BASE_URL}/admin/products/${category}/${id}`,
+  updateProduct: (category, id) => `${API_BASE_URL}/admin/products/${category}/${id}`,
+  deleteProduct: (category, id) => `${API_BASE_URL}/admin/products/${category}/${id}`,
+  removeImage: (category, id) => `${API_BASE_URL}/admin/products/${category}/${id}/remove-image`,
+  addToReadyStock: () => `${API_BASE_URL}/admin/ready-stock/add`,
+  updateReadyStock: (productId) => `${API_BASE_URL}/admin/ready-stock/update/${productId}`,
+  removeFromReadyStock: (productId) => `${API_BASE_URL}/admin/ready-stock/remove/${productId}`,
+},
   
   // Auth
   auth: {
