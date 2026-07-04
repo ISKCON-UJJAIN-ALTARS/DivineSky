@@ -94,7 +94,7 @@ export const CATEGORIES = [
       { value: "bookshelf", label: "Bookshelf" },
       { value: "bhog_table", label: "Bhog Table & Partions" },
       { value: "others", label: "Others Wooden Items" },
-      {value: "xyz", label: "Others Wooden Items" },
+      {value: "x", label: "y" },
     ]
   },
 ];
