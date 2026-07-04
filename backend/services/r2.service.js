@@ -52,6 +52,13 @@ async function uploadToR2(file, category) {
       throw new Error("file.buffer is required but was undefined");
     }
 
+    // Warn if multer-reported size and actual buffer length disagree
+    if (file.size && file.buffer.length !== file.size) {
+      console.warn(
+        `⚠️ Size mismatch! file.size=${file.size} but file.buffer.length=${file.buffer.length}`
+      );
+    }
+
     // Generate unique filename
     const fileExtension = path.extname(file.originalname);
     console.log("📝 File extension extracted:", fileExtension);
@@ -67,8 +74,10 @@ async function uploadToR2(file, category) {
       Key: key,
       Body: file.buffer,
       ContentType: file.mimetype || "application/octet-stream",
-      ContentLength: file.size || file.buffer.length,
-      ChecksumAlgorithm: undefined,
+      // ContentLength intentionally omitted — the SDK computes this directly
+      // from file.buffer.length. Manually setting it caused a mismatch with
+      // the signed request for larger files (videos), producing R2's
+      // "signature does not match" error.
       Metadata: {
         originalName: file.originalname,
         category: category,
@@ -90,7 +99,7 @@ async function uploadToR2(file, category) {
     return {
       url: publicUrl,
       key: key,
-      size: file.size || file.buffer.length,
+      size: file.buffer.length,
       mimetype: file.mimetype,
       originalName: file.originalname,
     };
