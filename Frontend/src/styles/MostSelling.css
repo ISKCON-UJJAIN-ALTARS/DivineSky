@@ -4,24 +4,40 @@
 /* 2. Replace the stock-quantity-badge with a rank badge */
 
 .most-selling-wrapper {
-  /* same as .ready-stock-wrapper */
+   max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 40px 80px;
+  min-height: 100vh;
+  background: linear-gradient(180deg, #fdfbf7 0%, #ffffff 100%);
 }
 
 .most-selling-header {
-  /* same as .ready-stock-header but use a fire/orange gradient */
+  padding: 60px 0 40px;
+  text-align: center;
   background: linear-gradient(135deg, #ff6b35 0%, #f7931e 50%, #ffcd3c 100%);
 }
 
 .most-selling-title {
-  /* same as .ready-stock-title */
+   font-size: 3rem;
+  font-weight: 800;
+  margin-bottom: 16px;
+  background: linear-gradient(135deg, #d97706, #f59e0b);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .most-selling-subtitle {
-  /* same as .ready-stock-subtitle */
+    font-size: 1.2rem;
+  color: #6b7280;
+  line-height: 1.6;
 }
 
 .most-selling-grid {
-  /* same as .ready-stock-grid */
+   display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 40px 30px;
+  margin-top: 40px;
 }
 
 .selling-product-wrapper {
