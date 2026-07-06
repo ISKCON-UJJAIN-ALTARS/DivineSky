@@ -23,6 +23,10 @@ export default function EditProduct() {
   const [features, setFeatures] = useState("");
   const [specs, setSpecs] = useState([{ key: "", value: "" }]);
 
+  // ─── Bulk add specs ─────────────────────────────────────────────
+  const [showBulkAdd, setShowBulkAdd] = useState(false);
+  const [bulkSpecsText, setBulkSpecsText] = useState("");
+
   const [altarSize, setAltarSize] = useState("");
   const [altarDesign, setAltarDesign] = useState("");
 
@@ -115,6 +119,48 @@ export default function EditProduct() {
   const removeSpec = (index) => {
     if (specs.length === 1) return;
     setSpecs((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // ─── Bulk add specs ─────────────────────────────────────────────
+  // Parses lines like "Material: Teak Wood" / "Material - Teak Wood" /
+  // "Material = Teak Wood" / "Material<TAB>Teak Wood" into {key, value}
+  // pairs. A line with no recognizable delimiter becomes a key with an
+  // empty value, so the user can still see it and fill it in manually.
+  const parseBulkSpecsText = (text) => {
+    const delimiters = [":", "\t", " - ", "=", "-"];
+    return text
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => {
+        for (const d of delimiters) {
+          const idx = line.indexOf(d);
+          if (idx > 0) {
+            return {
+              key: line.slice(0, idx).trim(),
+              value: line.slice(idx + d.length).trim(),
+            };
+          }
+        }
+        return { key: line, value: "" };
+      })
+      .filter((s) => s.key);
+  };
+
+  const handleBulkAddSpecs = () => {
+    const parsed = parseBulkSpecsText(bulkSpecsText);
+    if (parsed.length === 0) return;
+
+    setSpecs((prev) => {
+      const existingFilled = prev.filter((s) => s.key.trim() || s.value.trim());
+      const combined = [...existingFilled, ...parsed].slice(0, 15);
+      return combined.length ? combined : [{ key: "", value: "" }];
+    });
+
+    setBulkSpecsText("");
+    setShowBulkAdd(false);
+    setMessage({ type: "success", text: `✅ Added ${parsed.length} spec row${parsed.length !== 1 ? "s" : ""}` });
+    setTimeout(() => setMessage({ type: "", text: "" }), 2000);
   };
 
   // ─── Image processing ──────────────────────────────────────────
@@ -633,6 +679,41 @@ export default function EditProduct() {
             </div>
             <div className="form-group">
               <label>Specifications <span className="label-hint">shown as a table on product page</span></label>
+
+              <div className="bulk-specs-toggle">
+                <button
+                  type="button"
+                  className="bulk-add-toggle-btn"
+                  onClick={() => setShowBulkAdd((v) => !v)}
+                >
+                  {showBulkAdd ? "✕ Close bulk add" : "⚡ Bulk add from text"}
+                </button>
+              </div>
+
+              {showBulkAdd && (
+                <div className="bulk-specs-panel">
+                  <textarea
+                    value={bulkSpecsText}
+                    onChange={(e) => setBulkSpecsText(e.target.value)}
+                    placeholder={"Paste multiple lines, one spec per line:\nMaterial: Teak Wood\nColor: Golden Brown\nDimensions: 5' x 5' x 10'"}
+                    rows={6}
+                    className="bulk-specs-textarea"
+                  />
+                  <small className="form-hint">
+                    One line per spec. Separate the attribute and value with a colon, dash, equals sign, or tab
+                    — e.g. <em>"Material: Teak Wood"</em>. These rows will be added below the existing ones.
+                  </small>
+                  <button
+                    type="button"
+                    className="add-row-btn"
+                    onClick={handleBulkAddSpecs}
+                    disabled={!bulkSpecsText.trim()}
+                  >
+                    + Generate Rows
+                  </button>
+                </div>
+              )}
+
               <div className="specs-table">
                 <div className="specs-header-row">
                   <span className="specs-col-label">Attribute</span>

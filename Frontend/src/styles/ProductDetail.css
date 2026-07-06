@@ -820,24 +820,39 @@
 
   .product-features-text { font-size: 0.9rem; padding: 10px; }
 
-  /* Stack spec table */
+  /* Keep each spec row as one line: label left, value right.
+     Forcing every td to display:block (the old approach) stacked
+     label above value on separate lines, which no longer reads as
+     a table row at all. Flex keeps the row shape at any width. */
   .product-specs-table,
-  .product-specs-table tbody,
-  .product-specs-table tr,
-  .product-specs-table td {
+  .product-specs-table tbody {
     display: block;
     width: 100%;
   }
 
-  .product-specs-table tr { border-bottom: 1px solid #e5e7eb; padding: 8px 0; }
-  .product-specs-table tr:last-child { border-bottom: none; }
+  .product-specs-table tr {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 16px;
+    padding: 10px 4px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .product-specs-table tr:last-child {
+    border-bottom: none;
+  }
+
+  .spec-key,
+  .spec-value {
+    display: block;
+    width: auto;
+    padding: 0;
+  }
 
   .spec-key {
-    width: 100%;
+    flex: 0 0 42%;
     border-right: none;
-    border-bottom: 1px solid #f0f0f0;
-    padding-bottom: 4px;
-    margin-bottom: 2px;
     font-size: 0.82rem;
     text-transform: uppercase;
     letter-spacing: 0.03em;
@@ -845,7 +860,8 @@
   }
 
   .spec-value {
-    padding-top: 4px;
+    flex: 1;
+    text-align: right;
     font-size: 0.95rem;
     color: #1a1a1a;
     font-weight: 500;

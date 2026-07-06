@@ -1,40 +1,109 @@
-/* Copy ReadyStock.css entirely, then: */
+/* ============================================================
+   MostSelling.css
+   Matches the warm amber/cream "devotee" brand established in
+   ReadyStock.css — cream-to-white background, terracotta/amber
+   gradient accents, generous whitespace, soft shadows.
+   ============================================================ */
 
-/* 1. Rename .ready-stock-* classes to .most-selling-* */
-/* 2. Replace the stock-quantity-badge with a rank badge */
+:root {
+  --ms-amber-dark: #d97706;
+  --ms-amber-light: #f59e0b;
+  --ms-cream: #fdfbf7;
+  --ms-white: #ffffff;
+  --ms-text-muted: #6b7280;
+  --ms-text-dark: #1f2937;
+  --ms-border: #f0e6d6;
+  --ms-shadow: rgba(217, 119, 6, 0.15);
+}
 
 .most-selling-wrapper {
-   max-width: 1400px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 0 40px 80px;
   min-height: 100vh;
-  background: linear-gradient(180deg, #fdfbf7 0%, #ffffff 100%);
+  background: linear-gradient(180deg, var(--ms-cream) 0%, var(--ms-white) 100%);
 }
+
+/* ---------- Header ---------- */
 
 .most-selling-header {
   padding: 60px 0 40px;
   text-align: center;
-  background: linear-gradient(135deg, #ff6b35 0%, #f7931e 50%, #ffcd3c 100%);
+}
+
+.header-content {
+  max-width: 640px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stock-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  margin-bottom: 20px;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(217, 119, 6, 0.12));
+  border: 1px solid rgba(217, 119, 6, 0.25);
+  border-radius: 999px;
+}
+
+.badge-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.badge-text {
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ms-amber-dark);
 }
 
 .most-selling-title {
-   font-size: 3rem;
+  font-size: 3rem;
   font-weight: 800;
+  line-height: 1.15;
   margin-bottom: 16px;
-  background: linear-gradient(135deg, #d97706, #f59e0b);
+  background: linear-gradient(135deg, var(--ms-amber-dark), var(--ms-amber-light));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
 .most-selling-subtitle {
-    font-size: 1.2rem;
-  color: #6b7280;
+  font-size: 1.2rem;
+  color: var(--ms-text-muted);
   line-height: 1.6;
+  max-width: 520px;
 }
 
+/* ---------- Products count / page info ---------- */
+
+.products-count {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.products-count p {
+  font-size: 0.95rem;
+  color: var(--ms-text-muted);
+  font-weight: 500;
+}
+
+.page-info {
+  color: var(--ms-amber-dark);
+  font-weight: 600;
+}
+
+/* ---------- Grid ---------- */
+
 .most-selling-grid {
-   display: grid;
+  display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 40px 30px;
   margin-top: 40px;
@@ -42,6 +111,11 @@
 
 .selling-product-wrapper {
   position: relative;
+  animation: ms-fade-in 0.4s ease both;
+}
+
+.selling-product-wrapper:hover .selling-rank-badge {
+  transform: scale(1.08);
 }
 
 .selling-rank-badge {
@@ -49,11 +123,239 @@
   top: -10px;
   left: -10px;
   z-index: 10;
-  background: linear-gradient(135deg, #f59e0b, #d97706);
+  background: linear-gradient(135deg, var(--ms-amber-light), var(--ms-amber-dark));
   color: white;
   font-size: 0.85rem;
   font-weight: 700;
   padding: 4px 10px;
   border-radius: 20px;
-  box-shadow: 0 2px 8px rgba(217, 119, 6, 0.4);
+  box-shadow: 0 2px 8px var(--ms-shadow);
+  transition: transform 0.2s ease;
+}
+
+@keyframes ms-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ---------- Pagination ---------- */
+
+.pagination-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 64px;
+  flex-wrap: wrap;
+}
+
+.pagination-btn {
+  padding: 10px 20px;
+  border: 1px solid var(--ms-border);
+  border-radius: 10px;
+  background: var(--ms-white);
+  color: var(--ms-text-dark);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  border-color: var(--ms-amber-dark);
+  color: var(--ms-amber-dark);
+  box-shadow: 0 2px 8px var(--ms-shadow);
+}
+
+.pagination-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pagination-numbers {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pagination-number {
+  min-width: 40px;
+  height: 40px;
+  border: 1px solid var(--ms-border);
+  border-radius: 10px;
+  background: var(--ms-white);
+  color: var(--ms-text-dark);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pagination-number:hover {
+  border-color: var(--ms-amber-dark);
+  color: var(--ms-amber-dark);
+}
+
+.pagination-number.active {
+  background: linear-gradient(135deg, var(--ms-amber-light), var(--ms-amber-dark));
+  border-color: transparent;
+  color: white;
+  box-shadow: 0 2px 8px var(--ms-shadow);
+}
+
+.pagination-ellipsis {
+  padding: 0 6px;
+  color: var(--ms-text-muted);
+  font-weight: 600;
+}
+
+/* ---------- Loading state ---------- */
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 140px 0;
+  color: var(--ms-text-muted);
+  font-size: 1rem;
+}
+
+.spinner {
+  width: 44px;
+  height: 44px;
+  border: 4px solid var(--ms-border);
+  border-top-color: var(--ms-amber-dark);
+  border-radius: 50%;
+  animation: ms-spin 0.8s linear infinite;
+}
+
+@keyframes ms-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------- Error state ---------- */
+
+.error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 140px 0;
+  text-align: center;
+  color: var(--ms-text-dark);
+  font-size: 1.05rem;
+}
+
+.retry-btn {
+  padding: 10px 28px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--ms-amber-light), var(--ms-amber-dark));
+  color: white;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  box-shadow: 0 4px 12px var(--ms-shadow);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.retry-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px var(--ms-shadow);
+}
+
+/* ---------- Empty state ---------- */
+
+.empty-stock-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 120px 20px;
+  text-align: center;
+}
+
+.empty-icon {
+  font-size: 3rem;
+  margin-bottom: 12px;
+}
+
+.empty-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--ms-text-dark);
+}
+
+.empty-subtitle {
+  font-size: 1rem;
+  color: var(--ms-text-muted);
+  max-width: 420px;
+  margin-bottom: 20px;
+}
+
+.browse-btn {
+  display: inline-block;
+  padding: 12px 32px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--ms-amber-light), var(--ms-amber-dark));
+  color: white;
+  font-weight: 700;
+  font-size: 0.95rem;
+  text-decoration: none;
+  box-shadow: 0 4px 12px var(--ms-shadow);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.browse-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px var(--ms-shadow);
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 768px) {
+  .most-selling-wrapper {
+    padding: 0 20px 60px;
+  }
+
+  .most-selling-title {
+    font-size: 2.1rem;
+  }
+
+  .most-selling-subtitle {
+    font-size: 1rem;
+  }
+
+  .most-selling-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 28px 16px;
+  }
+
+  .pagination-numbers {
+    order: 1;
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .selling-product-wrapper {
+    animation: none;
+  }
+
+  .spinner {
+    animation-duration: 1.6s;
+  }
 }

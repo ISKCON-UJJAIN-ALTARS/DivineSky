@@ -342,6 +342,167 @@
   min-height: 100px;
 }
 
+/* ================================
+   SPECIFICATIONS TABLE
+================================ */
+.specs-table {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.specs-header-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 32px;
+  gap: 10px;
+  padding: 0 4px 4px;
+}
+
+.specs-col-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #9ca3af;
+}
+
+.spec-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 32px;
+  gap: 10px;
+  align-items: center;
+}
+
+.spec-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 2px solid rgba(217, 119, 6, 0.15);
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  background: #fafafa;
+  transition: all 0.3s ease;
+}
+
+.spec-input:focus {
+  outline: none;
+  border-color: #d97706;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.1);
+}
+
+.remove-feature-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(239, 68, 68, 0.1);
+  border: 2px solid rgba(239, 68, 68, 0.25);
+  border-radius: 8px;
+  color: #dc2626;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.remove-feature-btn:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.2);
+  transform: scale(1.08);
+}
+
+.remove-feature-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.add-row-btn {
+  padding: 10px 20px;
+  background: rgba(217, 119, 6, 0.08);
+  border: 2px dashed rgba(217, 119, 6, 0.35);
+  border-radius: 10px;
+  color: #d97706;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.add-row-btn:hover:not(:disabled) {
+  background: rgba(217, 119, 6, 0.15);
+  border-color: #d97706;
+}
+
+.add-row-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Bulk Add Panel */
+.bulk-specs-toggle {
+  margin-bottom: 10px;
+}
+
+.bulk-add-toggle-btn {
+  padding: 8px 16px;
+  background: white;
+  border: 2px solid rgba(217, 119, 6, 0.3);
+  border-radius: 8px;
+  color: #d97706;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.bulk-add-toggle-btn:hover {
+  background: rgba(217, 119, 6, 0.08);
+  border-color: #d97706;
+}
+
+.bulk-specs-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(217, 119, 6, 0.05), rgba(245, 158, 11, 0.05));
+  border: 2px solid rgba(217, 119, 6, 0.2);
+  border-radius: 12px;
+  animation: slideInSubcat 0.3s ease;
+}
+
+.bulk-specs-textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 2px solid rgba(217, 119, 6, 0.2);
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  background: white;
+  resize: vertical;
+  transition: all 0.3s ease;
+}
+
+.bulk-specs-textarea:focus {
+  outline: none;
+  border-color: #d97706;
+  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.1);
+}
+
+.bulk-specs-panel .add-row-btn {
+  align-self: flex-start;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border-style: solid;
+  color: white;
+}
+
+.bulk-specs-panel .add-row-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3);
+}
+
 /* Subcategory Form Group - Special Styling */
 .subcategory-group {
   animation: slideInSubcat 0.3s ease;
@@ -623,6 +784,20 @@
   .save-btn {
     font-size: 1rem;
     padding: 14px 28px;
+  }
+
+  .specs-header-row {
+    display: none;
+  }
+
+  .spec-row {
+    grid-template-columns: 1fr 1fr 28px;
+    gap: 6px;
+  }
+
+  .spec-input {
+    padding: 8px 10px;
+    font-size: 0.85rem;
   }
 }
 
