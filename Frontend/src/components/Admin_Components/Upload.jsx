@@ -17,28 +17,24 @@ export default function Upload() {
   const [category, setCategory] = useState("altars");
   const [subCategory, setSubCategory] = useState("");
 
-  // Amazon-style description fields
   const [tagline, setTagline] = useState("");
   const [features, setFeatures] = useState("");
   const [specs, setSpecs] = useState([{ key: "", value: "" }]);
 
-  // Altar-specific specifications
   const [altarSize, setAltarSize] = useState("");
   const [altarDesign, setAltarDesign] = useState("");
 
   const [hidePrice, setHidePrice] = useState(false);
+  const [isMostSelling, setIsMostSelling] = useState(false);
+
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState("");
   const [isUploading, setIsUploading] = useState(false);
-
-  // Drag & drop UI state for the images dropzone
   const [isDragging, setIsDragging] = useState(false);
 
   // ─── Spec table ────────────────────────────────────────────────
   const handleSpecChange = (index, field, value) => {
-    setSpecs((prev) =>
-      prev.map((s, i) => (i === index ? { ...s, [field]: value } : s))
-    );
+    setSpecs((prev) => prev.map((s, i) => (i === index ? { ...s, [field]: value } : s)));
   };
 
   const addSpec = () => {
@@ -55,16 +51,12 @@ export default function Upload() {
   const handleModelChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    const isGLB =
-      file.name.toLowerCase().endsWith(".glb") ||
-      file.name.toLowerCase().endsWith(".gltf");
+    const isGLB = file.name.toLowerCase().endsWith(".glb") || file.name.toLowerCase().endsWith(".gltf");
     if (!isGLB) { alert("Only GLB / GLTF models are allowed"); return; }
     if (file.size > 50 * 1024 * 1024) { alert("Model must be under 50MB"); return; }
     setModel(file);
   };
 
-  // Shared validation/handling logic for images, regardless of source
-  // (file picker, drag-and-drop, or clipboard paste)
   const processImageFiles = (fileList) => {
     const files = Array.from(fileList);
     if (files.length === 0) return;
@@ -81,43 +73,16 @@ export default function Upload() {
     });
   };
 
-  const handleImagesChange = (e) => {
-    processImageFiles(e.target.files);
-  };
-
-  // Drag and drop handlers for the images dropzone
-  const handleImageDragOver = (e) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleImageDragLeave = (e) => {
-    e.preventDefault();
-    setIsDragging(false);
-  };
-
-  const handleImageDrop = (e) => {
-    e.preventDefault();
-    setIsDragging(false);
-    if (e.dataTransfer.files?.length) {
-      processImageFiles(e.dataTransfer.files);
-    }
-  };
-
-  // Paste-from-clipboard handler for the images dropzone
+  const handleImagesChange = (e) => processImageFiles(e.target.files);
+  const handleImageDragOver  = (e) => { e.preventDefault(); setIsDragging(true); };
+  const handleImageDragLeave = (e) => { e.preventDefault(); setIsDragging(false); };
+  const handleImageDrop = (e) => { e.preventDefault(); setIsDragging(false); if (e.dataTransfer.files?.length) processImageFiles(e.dataTransfer.files); };
   const handleImagePaste = (e) => {
-    const items = e.clipboardData?.items;
-    if (!items) return;
-    const pastedFiles = [];
-    for (const item of items) {
-      if (item.type.startsWith("image/")) {
-        const file = item.getAsFile();
-        if (file) pastedFiles.push(file);
-      }
-    }
-    if (pastedFiles.length > 0) {
-      processImageFiles(pastedFiles);
-    }
+    const files = Array.from(e.clipboardData?.items || [])
+      .filter((i) => i.type.startsWith("image/"))
+      .map((i) => i.getAsFile())
+      .filter(Boolean);
+    if (files.length > 0) processImageFiles(files);
   };
 
   const removeImage = (index) => {
@@ -140,10 +105,7 @@ export default function Upload() {
     const newCategory = e.target.value;
     setCategory(newCategory);
     setSubCategory("");
-    if (newCategory !== "altars") {
-      setAltarSize("");
-      setAltarDesign("");
-    }
+    if (newCategory !== "altars") { setAltarSize(""); setAltarDesign(""); }
   };
 
   // ─── Upload ────────────────────────────────────────────────────
@@ -154,7 +116,6 @@ export default function Upload() {
 
     const hasSubCategories = CATEGORIES_OBJECT[category]?.subCategories?.length > 0;
     if (hasSubCategories && !subCategory) { alert("Please select a subcategory"); return; }
-
     if (category === "altars") {
       if (!altarSize) { alert("Please select an altar size"); return; }
       if (!altarDesign) { alert("Please select an altar design"); return; }
@@ -177,6 +138,7 @@ export default function Upload() {
     formData.append("subCategory", subCategory);
     formData.append("includeModel", includeModel);
     formData.append("hidePrice", hidePrice ? "true" : "false");
+    formData.append("mostSelling", isMostSelling ? "true" : "false");
     if (category === "altars") {
       formData.append("altarSize", altarSize);
       formData.append("altarDesign", altarDesign);
@@ -198,14 +160,8 @@ export default function Upload() {
     xhr.onload = () => {
       setIsUploading(false);
       if (xhr.status === 200 || xhr.status === 201) {
-        try {
-          JSON.parse(xhr.responseText);
-          setStatus("success");
-          setProgress(100);
-          setTimeout(() => clearForm(), 2000);
-        } catch {
-          setStatus("error");
-        }
+        try { JSON.parse(xhr.responseText); setStatus("success"); setProgress(100); setTimeout(() => clearForm(), 2000); }
+        catch { setStatus("error"); }
       } else {
         setStatus("error");
       }
@@ -216,24 +172,11 @@ export default function Upload() {
   };
 
   const clearForm = () => {
-    setModel(null);
-    setImages([]);
-    setPreviews([]);
-    setVideo(null);
-    setVideoPreview(null);
-    setIncludeModel(false);
-    setName("");
-    setPrice("");
-    setTagline("");
-    setFeatures("");
-    setSpecs([{ key: "", value: "" }]);
-    setCategory("altars");
-    setSubCategory("");
-    setAltarSize("");
-    setAltarDesign("");
-    setHidePrice(false);
-    setProgress(0);
-    setStatus("");
+    setModel(null); setImages([]); setPreviews([]); setVideo(null); setVideoPreview(null);
+    setIncludeModel(false); setName(""); setPrice(""); setTagline(""); setFeatures("");
+    setSpecs([{ key: "", value: "" }]); setCategory("altars"); setSubCategory("");
+    setAltarSize(""); setAltarDesign(""); setHidePrice(false); setIsMostSelling(false);
+    setProgress(0); setStatus("");
   };
 
   const currentSubCategories = CATEGORIES_OBJECT[category]?.subCategories || [];
@@ -252,13 +195,7 @@ export default function Upload() {
           {/* 3D MODEL TOGGLE */}
           <div className="checkbox-section">
             <label className="checkbox-label">
-              <input
-                type="checkbox"
-                checked={includeModel}
-                onChange={(e) => setIncludeModel(e.target.checked)}
-                disabled={isUploading}
-                className="checkbox-input"
-              />
+              <input type="checkbox" checked={includeModel} onChange={(e) => setIncludeModel(e.target.checked)} disabled={isUploading} className="checkbox-input" />
               <span className="checkbox-text">Include 3D Model (Optional)</span>
             </label>
           </div>
@@ -272,9 +209,7 @@ export default function Upload() {
                     <div className="file-icon">📦</div>
                     <p className="file-name">{model.name}</p>
                     <span className="file-size">{(model.size / 1024 / 1024).toFixed(2)} MB</span>
-                    <button type="button" className="remove-file-btn" onClick={(e) => { e.preventDefault(); setModel(null); }}>
-                      Remove Model
-                    </button>
+                    <button type="button" className="remove-file-btn" onClick={(e) => { e.preventDefault(); setModel(null); }}>Remove Model</button>
                   </div>
                 ) : (
                   <div className="file-placeholder">
@@ -301,9 +236,7 @@ export default function Upload() {
                 style={isDragging ? { background: "#f0f8ff", borderColor: "#4a90d9" } : undefined}
               >
                 <div className="upload-icon">📸</div>
-                <p className="placeholder-text">
-                  Drag & drop, paste (Ctrl+V), or click to upload images ({images.length}/5)
-                </p>
+                <p className="placeholder-text">Drag & drop, paste (Ctrl+V), or click to upload images ({images.length}/5)</p>
                 <span className="placeholder-hint">PNG, JPG up to 10MB each · Required</span>
               </div>
               <input type="file" accept="image/*" multiple onChange={handleImagesChange} style={{ display: "none" }} disabled={isUploading || images.length >= 5} />
@@ -327,9 +260,7 @@ export default function Upload() {
               {videoPreview ? (
                 <div className="video-preview">
                   <video src={videoPreview} controls className="preview-video" />
-                  <button type="button" className="remove-video-btn" onClick={(e) => { e.preventDefault(); setVideo(null); setVideoPreview(null); }}>
-                    Remove Video
-                  </button>
+                  <button type="button" className="remove-video-btn" onClick={(e) => { e.preventDefault(); setVideo(null); setVideoPreview(null); }}>Remove Video</button>
                 </div>
               ) : (
                 <div className="video-placeholder">
@@ -359,9 +290,7 @@ export default function Upload() {
               <span className="checkbox-text">📞 Hide price (show Call / WhatsApp instead)</span>
             </label>
             <span className="placeholder-hint">
-              {hidePrice
-                ? 'Customers will see "📞 Call / WhatsApp: +91 97136 00059" instead of the price.'
-                : "The price above will still be saved and can be shown again later."}
+              {hidePrice ? 'Customers will see "📞 Call / WhatsApp: +91 97136 00059" instead of the price.' : "The price above will still be saved and can be shown again later."}
             </span>
           </div>
 
@@ -397,18 +326,14 @@ export default function Upload() {
                 <label className="label">{ALTAR_SPECIFICATIONS.size.label} *</label>
                 <select value={altarSize} onChange={(e) => setAltarSize(e.target.value)} className="form-select altar-spec-select" disabled={isUploading}>
                   <option value="">-- Select Size --</option>
-                  {ALTAR_SPECIFICATIONS.size.options.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                  ))}
+                  {ALTAR_SPECIFICATIONS.size.options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
               </div>
               <div className="altar-spec-group form-group">
                 <label className="label">{ALTAR_SPECIFICATIONS.design.label} *</label>
                 <select value={altarDesign} onChange={(e) => setAltarDesign(e.target.value)} className="form-select altar-spec-select" disabled={isUploading}>
                   <option value="">-- Select Design --</option>
-                  {ALTAR_SPECIFICATIONS.design.options.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                  ))}
+                  {ALTAR_SPECIFICATIONS.design.options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
               </div>
             </div>
@@ -417,44 +342,17 @@ export default function Upload() {
           {/* PRODUCT DESCRIPTION */}
           <div className="description-section">
             <h3 className="description-section-title">📝 Product Description</h3>
-
-            {/* Tagline */}
             <div className="form-group">
               <label className="label">Tagline / Headline</label>
-              <input
-                type="text"
-                value={tagline}
-                onChange={(e) => setTagline(e.target.value)}
-                placeholder='e.g. "Handcrafted Royal Prabhupada Altar in Teak & Gold Finish"'
-                className="form-input"
-                disabled={isUploading}
-                maxLength={120}
-              />
+              <input type="text" value={tagline} onChange={(e) => setTagline(e.target.value)} placeholder='e.g. "Handcrafted Royal Prabhupada Altar in Teak & Gold Finish"' className="form-input" disabled={isUploading} maxLength={120} />
               <span className="placeholder-hint">{tagline.length}/120 characters</span>
             </div>
-
-            {/* Features */}
             <div className="form-group">
-              <label className="label">
-                About this Item
-                <span className="label-hint">shown as a description on the product page</span>
-              </label>
-              <textarea
-                value={features}
-                onChange={(e) => setFeatures(e.target.value)}
-                placeholder="Enter product description, features, pricing options, materials, etc."
-                className="form-input"
-                rows={10}
-                disabled={isUploading}
-              />
+              <label className="label">About this Item <span className="label-hint">shown as a description on the product page</span></label>
+              <textarea value={features} onChange={(e) => setFeatures(e.target.value)} placeholder="Enter product description, features, pricing options, materials, etc." className="form-input" rows={10} disabled={isUploading} />
             </div>
-
-            {/* Specifications Table */}
             <div className="form-group">
-              <label className="label">
-                Specifications
-                <span className="label-hint">shown as a table on product page</span>
-              </label>
+              <label className="label">Specifications <span className="label-hint">shown as a table on product page</span></label>
               <div className="specs-table">
                 <div className="specs-header-row">
                   <span className="specs-col-label">Attribute</span>
@@ -463,40 +361,25 @@ export default function Upload() {
                 </div>
                 {specs.map((spec, index) => (
                   <div key={index} className="spec-row">
-                    <input
-                      type="text"
-                      value={spec.key}
-                      onChange={(e) => handleSpecChange(index, "key", e.target.value)}
-                      placeholder="e.g. Material"
-                      className="form-input spec-input"
-                      disabled={isUploading}
-                    />
-                    <input
-                      type="text"
-                      value={spec.value}
-                      onChange={(e) => handleSpecChange(index, "value", e.target.value)}
-                      placeholder="e.g. Teak Wood"
-                      className="form-input spec-input"
-                      disabled={isUploading}
-                    />
-                    <button
-                      type="button"
-                      className="remove-feature-btn"
-                      onClick={() => removeSpec(index)}
-                      disabled={isUploading || specs.length === 1}
-                      title="Remove"
-                    >
-                      ✕
-                    </button>
+                    <input type="text" value={spec.key} onChange={(e) => handleSpecChange(index, "key", e.target.value)} placeholder="e.g. Material" className="form-input spec-input" disabled={isUploading} />
+                    <input type="text" value={spec.value} onChange={(e) => handleSpecChange(index, "value", e.target.value)} placeholder="e.g. Teak Wood" className="form-input spec-input" disabled={isUploading} />
+                    <button type="button" className="remove-feature-btn" onClick={() => removeSpec(index)} disabled={isUploading || specs.length === 1} title="Remove">✕</button>
                   </div>
                 ))}
               </div>
-              {specs.length < 15 && (
-                <button type="button" className="add-row-btn" onClick={addSpec} disabled={isUploading}>
-                  + Add Row
-                </button>
-              )}
+              {specs.length < 15 && <button type="button" className="add-row-btn" onClick={addSpec} disabled={isUploading}>+ Add Row</button>}
             </div>
+          </div>
+
+          {/* MOST SELLING */}
+          <div className="checkbox-section">
+            <label className="checkbox-label">
+              <input type="checkbox" checked={isMostSelling} onChange={(e) => setIsMostSelling(e.target.checked)} disabled={isUploading} className="checkbox-input" />
+              <span className="checkbox-text">🔥 Mark as Most Selling</span>
+            </label>
+            <span className="placeholder-hint">
+              {isMostSelling ? "This product will be featured in the Most Selling section on the storefront." : "Check to feature this product in the Most Selling section."}
+            </span>
           </div>
 
           {/* PROGRESS */}

@@ -20,6 +20,7 @@ export const API_ENDPOINTS = {
     getReadyStock: (page = 1, limit = 20) => `${API_BASE_URL}/products/ready-stock?page=${page}&limit=${limit}`,
     getBySubCategory: (category, subCategory, page = 1, limit = 10) => 
       `${API_BASE_URL}/products/subcategory/${category}/${subCategory}?page=${page}&limit=${limit}`,
+   getMostSelling: (page = 1, limit = 20) => `${API_BASE_URL}/products/most-selling?page=${page}&limit=${limit}`,
   },
   
   // Admin
