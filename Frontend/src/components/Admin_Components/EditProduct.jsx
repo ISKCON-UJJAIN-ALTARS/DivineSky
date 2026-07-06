@@ -28,6 +28,7 @@ export default function EditProduct() {
 
   const [isHidden, setIsHidden] = useState(false);
   const [hidePrice, setHidePrice] = useState(false);
+  const [isMostSelling, setIsMostSelling] = useState(false);
 
   const [inReadyStock, setInReadyStock] = useState(false);
   const [readyStockQuantity, setReadyStockQuantity] = useState("");
@@ -37,8 +38,6 @@ export default function EditProduct() {
   const [newModel, setNewModel] = useState(null);
   const [newVideo, setNewVideo] = useState(null);
   const [imagePreviews, setImagePreviews] = useState([]);
-
-  // Drag & drop / paste UI state for the image dropzone
   const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
@@ -80,6 +79,7 @@ export default function EditProduct() {
         setAltarDesign(p.altarDesign || "");
         setIsHidden(!!p.isHidden);
         setHidePrice(!!p.hidePrice);
+        setIsMostSelling(p.mostSelling || false);
 
         const desc = parseDescription(p.description);
         setTagline(desc.tagline);
@@ -117,16 +117,10 @@ export default function EditProduct() {
     setSpecs((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // ─── File handlers ─────────────────────────────────────────────
-
-  // Shared validation/handling logic for images, regardless of source
-  // (file picker, drag-and-drop, or clipboard paste)
+  // ─── Image processing ──────────────────────────────────────────
   const processImageFiles = (fileList) => {
     const files = Array.from(fileList).filter((f) => f.type.startsWith("image/"));
-    if (files.length === 0) {
-      setMessage({ type: "error", text: "Only image files are allowed" });
-      return;
-    }
+    if (files.length === 0) { setMessage({ type: "error", text: "Only image files are allowed" }); return; }
     const maxAllowed = replaceImages ? 5 : 10 - (product?.images?.length || 0);
     if (files.length > maxAllowed) {
       setMessage({
@@ -142,51 +136,22 @@ export default function EditProduct() {
     setMessage({ type: "", text: "" });
   };
 
-  const handleImageChange = (e) => {
-    processImageFiles(e.target.files);
-  };
-
-  // Drag and drop handlers for the image dropzone
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = (e) => {
-    e.preventDefault();
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    setIsDragging(false);
-    if (e.dataTransfer.files?.length) {
-      processImageFiles(e.dataTransfer.files);
-    }
-  };
-
-  // Paste-from-clipboard handler for the image dropzone
+  const handleImageChange = (e) => processImageFiles(e.target.files);
+  const handleDragOver  = (e) => { e.preventDefault(); setIsDragging(true); };
+  const handleDragLeave = (e) => { e.preventDefault(); setIsDragging(false); };
+  const handleDrop = (e) => { e.preventDefault(); setIsDragging(false); if (e.dataTransfer.files?.length) processImageFiles(e.dataTransfer.files); };
   const handlePaste = (e) => {
-    const items = e.clipboardData?.items;
-    if (!items) return;
-    const pastedFiles = [];
-    for (const item of items) {
-      if (item.type.startsWith("image/")) {
-        const file = item.getAsFile();
-        if (file) pastedFiles.push(file);
-      }
-    }
-    if (pastedFiles.length > 0) {
-      processImageFiles(pastedFiles);
-    }
+    const files = Array.from(e.clipboardData?.items || [])
+      .filter((i) => i.type.startsWith("image/"))
+      .map((i) => i.getAsFile())
+      .filter(Boolean);
+    if (files.length > 0) processImageFiles(files);
   };
 
   const handleModelChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    const isGLB =
-      file.name.toLowerCase().endsWith(".glb") ||
-      file.name.toLowerCase().endsWith(".gltf");
+    const isGLB = file.name.toLowerCase().endsWith(".glb") || file.name.toLowerCase().endsWith(".gltf");
     if (!isGLB) { setMessage({ type: "error", text: "Only GLB/GLTF files allowed" }); return; }
     if (file.size > 50 * 1024 * 1024) { setMessage({ type: "error", text: "Model must be under 50MB" }); return; }
     setNewModel(file);
@@ -243,10 +208,7 @@ export default function EditProduct() {
       });
       const data = await response.json();
       if (data.success) {
-        setMessage({
-          type: "success",
-          text: `✅ ${label.charAt(0).toUpperCase() + label.slice(1)} removed`,
-        });
+        setMessage({ type: "success", text: `✅ ${label.charAt(0).toUpperCase() + label.slice(1)} removed` });
         fetchProduct();
         setTimeout(() => setMessage({ type: "", text: "" }), 2000);
       } else {
@@ -274,6 +236,7 @@ export default function EditProduct() {
     formData.append("subCategory", subCategory);
     formData.append("isHidden", isHidden ? "true" : "false");
     formData.append("hidePrice", hidePrice ? "true" : "false");
+    formData.append("mostSelling", isMostSelling ? "true" : "false");
     formData.append("inReadyStock", inReadyStock ? "true" : "false");
     if (inReadyStock && readyStockQuantity) {
       formData.append("readyStockQuantity", readyStockQuantity);
@@ -306,6 +269,7 @@ export default function EditProduct() {
       if (data.success) {
         if (field === "isHidden") setIsHidden(next);
         if (field === "hidePrice") setHidePrice(next);
+        if (field === "mostSelling") setIsMostSelling(next);
         setMessage({ type: "success", text: next ? messages.successOn : messages.successOff });
         fetchProduct();
         setTimeout(() => setMessage({ type: "", text: "" }), 2500);
@@ -319,21 +283,26 @@ export default function EditProduct() {
     }
   };
 
-  const toggleHidden = () =>
-    quickToggle("isHidden", isHidden, {
-      confirmOn: "Hide this product from customers?",
-      confirmOff: "Unhide this product so customers can see it again?",
-      successOn: "✅ Product hidden from customers",
-      successOff: "✅ Product is now visible to customers",
-    });
+  const toggleHidden = () => quickToggle("isHidden", isHidden, {
+    confirmOn: "Hide this product from customers?",
+    confirmOff: "Unhide this product so customers can see it again?",
+    successOn: "✅ Product hidden from customers",
+    successOff: "✅ Product is now visible to customers",
+  });
 
-  const toggleHidePrice = () =>
-    quickToggle("hidePrice", hidePrice, {
-      confirmOn: "Hide the price? Customers will see a Call/WhatsApp prompt instead.",
-      confirmOff: "Show the price again for this product?",
-      successOn: "✅ Price hidden — customers will see Call/WhatsApp instead",
-      successOff: "✅ Price is now visible to customers",
-    });
+  const toggleHidePrice = () => quickToggle("hidePrice", hidePrice, {
+    confirmOn: "Hide the price? Customers will see a Call/WhatsApp prompt instead.",
+    confirmOff: "Show the price again for this product?",
+    successOn: "✅ Price hidden — customers will see Call/WhatsApp instead",
+    successOff: "✅ Price is now visible to customers",
+  });
+
+  const toggleMostSelling = () => quickToggle("mostSelling", isMostSelling, {
+    confirmOn: "Feature this product as Most Selling?",
+    confirmOff: "Remove this product from Most Selling?",
+    successOn: "✅ Product marked as Most Selling",
+    successOff: "✅ Product removed from Most Selling",
+  });
 
   // ─── Main save ─────────────────────────────────────────────────
   const handleSave = async () => {
@@ -388,6 +357,9 @@ export default function EditProduct() {
         if (data.readyStock?.inStock) {
           successMsg += ` (Ready Stock: ${data.readyStock.quantity} units)`;
         }
+        if (data.mostSelling) {
+          successMsg += " · 🔥 Most Selling";
+        }
 
         setMessage({ type: "success", text: successMsg });
         setNewImages([]);
@@ -414,12 +386,7 @@ export default function EditProduct() {
   };
 
   if (loading) {
-    return (
-      <div className="edit-loading">
-        <div className="spinner"></div>
-        <p>Loading product...</p>
-      </div>
-    );
+    return <div className="edit-loading"><div className="spinner"></div><p>Loading product...</p></div>;
   }
 
   if (!product) {
@@ -437,9 +404,7 @@ export default function EditProduct() {
   return (
     <div className="edit-product-container">
       <div className="edit-header">
-        <button className="back-btn" onClick={() => navigate("/admin/products")}>
-          ← Back to Products
-        </button>
+        <button className="back-btn" onClick={() => navigate("/admin/products")}>← Back to Products</button>
         <h2>Edit Product</h2>
       </div>
 
@@ -464,9 +429,7 @@ export default function EditProduct() {
               {isHidden ? "Unhide Product" : "Hide Product"}
             </button>
             <small className="form-hint">
-              {isHidden
-                ? "This product is hidden and won't appear on the storefront."
-                : "This product is live on the storefront."}
+              {isHidden ? "This product is hidden and won't appear on the storefront." : "This product is live on the storefront."}
             </small>
           </div>
 
@@ -482,9 +445,23 @@ export default function EditProduct() {
               {hidePrice ? "Show Price Again" : "Hide Price (Show Call/WhatsApp)"}
             </button>
             <small className="form-hint">
-              {hidePrice
-                ? 'Customers see "📞 Call / WhatsApp: +91 97136 00059" instead of the price.'
-                : "Customers see the price normally."}
+              {hidePrice ? 'Customers see "📞 Call / WhatsApp: +91 97136 00059" instead of the price.' : "Customers see the price normally."}
+            </small>
+          </div>
+
+          {/* Most Selling */}
+          <div className="info-block">
+            <label>Most Selling</label>
+            <div className="current-category">
+              <span className={`category-badge ${isMostSelling ? "badge-visible" : "badge-hidden"}`}>
+                {isMostSelling ? "🔥 Featured as Most Selling" : "➖ Not in Most Selling"}
+              </span>
+            </div>
+            <button type="button" className="remove-btn" onClick={toggleMostSelling} disabled={saving} style={{ marginTop: "8px" }}>
+              {isMostSelling ? "Remove from Most Selling" : "Mark as Most Selling"}
+            </button>
+            <small className="form-hint">
+              {isMostSelling ? "This product appears in the Most Selling section." : "Feature this product in the Most Selling section."}
             </small>
           </div>
 
@@ -496,9 +473,7 @@ export default function EditProduct() {
             </div>
             {product.subCategory && (
               <div className="current-subcategory">
-                <small>
-                  Subcategory: {getSubCategoryLabel(product.category || category, product.subCategory)}
-                </small>
+                <small>Subcategory: {getSubCategoryLabel(product.category || category, product.subCategory)}</small>
               </div>
             )}
           </div>
@@ -519,9 +494,7 @@ export default function EditProduct() {
             <label>Ready Stock Status</label>
             <div className="current-category">
               <span className={`category-badge ${inReadyStock ? "badge-visible" : "badge-hidden"}`}>
-                {inReadyStock
-                  ? `📦 In Ready Stock — ${readyStockQuantity || "?"} units`
-                  : "❌ Not in Ready Stock"}
+                {inReadyStock ? `📦 In Ready Stock — ${readyStockQuantity || "?"} units` : "❌ Not in Ready Stock"}
               </span>
             </div>
           </div>
@@ -533,14 +506,7 @@ export default function EditProduct() {
               {product.images?.map((img, idx) => (
                 <div key={idx} className="image-with-remove">
                   <img src={img.url} alt={`Product ${idx + 1}`} />
-                  <button
-                    className="remove-image-btn"
-                    onClick={() => removeImage(idx)}
-                    disabled={saving}
-                    title="Remove this image"
-                  >
-                    ✕
-                  </button>
+                  <button className="remove-image-btn" onClick={() => removeImage(idx)} disabled={saving} title="Remove this image">✕</button>
                 </div>
               ))}
             </div>
@@ -552,9 +518,7 @@ export default function EditProduct() {
             {product.hasModel ? (
               <div className="current-file">
                 <span>✅ Model available</span>
-                <button className="remove-btn" onClick={() => removeExistingMedia("removeModel")} disabled={saving}>
-                  Remove
-                </button>
+                <button className="remove-btn" onClick={() => removeExistingMedia("removeModel")} disabled={saving}>Remove</button>
               </div>
             ) : (
               <p className="no-file">❌ No model uploaded</p>
@@ -567,9 +531,7 @@ export default function EditProduct() {
             {product.video ? (
               <div className="current-file">
                 <video src={product.video} controls className="video-preview" />
-                <button className="remove-btn" onClick={() => removeExistingMedia("removeVideo")} disabled={saving}>
-                  Remove
-                </button>
+                <button className="remove-btn" onClick={() => removeExistingMedia("removeVideo")} disabled={saving}>Remove</button>
               </div>
             ) : (
               <p className="no-file">❌ No video uploaded</p>
@@ -609,14 +571,9 @@ export default function EditProduct() {
           {hasSubCategories && (
             <div className="form-group subcategory-group">
               <label>
-                Subcategory *
-                <span className="label-hint">for {getCategoryLabel(selectedCategory)}</span>
+                Subcategory * <span className="label-hint">for {getCategoryLabel(selectedCategory)}</span>
               </label>
-              <select
-                value={subCategory}
-                onChange={(e) => setSubCategory(e.target.value)}
-                className="category-select subcategory-select"
-              >
+              <select value={subCategory} onChange={(e) => setSubCategory(e.target.value)} className="category-select subcategory-select">
                 <option value="">-- Select Subcategory --</option>
                 {currentSubCategories.map((sub) => (
                   <option key={sub.value} value={sub.value}>{sub.label}</option>
@@ -638,18 +595,14 @@ export default function EditProduct() {
                 <label>{ALTAR_SPECIFICATIONS.size.label} *</label>
                 <select value={altarSize} onChange={(e) => setAltarSize(e.target.value)} className="category-select altar-spec-select">
                   <option value="">-- Select Size --</option>
-                  {ALTAR_SPECIFICATIONS.size.options.map((o) => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
-                  ))}
+                  {ALTAR_SPECIFICATIONS.size.options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
               </div>
               <div className="altar-spec-group form-group">
                 <label>{ALTAR_SPECIFICATIONS.design.label} *</label>
                 <select value={altarDesign} onChange={(e) => setAltarDesign(e.target.value)} className="category-select altar-spec-select">
                   <option value="">-- Select Design --</option>
-                  {ALTAR_SPECIFICATIONS.design.options.map((o) => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
-                  ))}
+                  {ALTAR_SPECIFICATIONS.design.options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
               </div>
             </div>
@@ -669,37 +622,17 @@ export default function EditProduct() {
           {/* Description */}
           <div className="description-section">
             <h3 className="description-section-title">📝 Product Description</h3>
-
             <div className="form-group">
               <label>Tagline / Headline</label>
-              <input
-                type="text"
-                value={tagline}
-                onChange={(e) => setTagline(e.target.value)}
-                placeholder='e.g. "Handcrafted Royal Prabhupada Altar in Teak & Gold Finish"'
-                maxLength={120}
-              />
+              <input type="text" value={tagline} onChange={(e) => setTagline(e.target.value)} placeholder='e.g. "Handcrafted Royal Prabhupada Altar in Teak & Gold Finish"' maxLength={120} />
               <small className="form-hint">{tagline.length}/120 characters</small>
             </div>
-
             <div className="form-group">
-              <label>
-                About this Item
-                <span className="label-hint">shown as a description on the product page</span>
-              </label>
-              <textarea
-                value={features}
-                onChange={(e) => setFeatures(e.target.value)}
-                placeholder="Enter product description, features, pricing options, materials, etc."
-                rows={10}
-              />
+              <label>About this Item <span className="label-hint">shown as a description on the product page</span></label>
+              <textarea value={features} onChange={(e) => setFeatures(e.target.value)} placeholder="Enter product description, features, pricing options, materials, etc." rows={10} />
             </div>
-
             <div className="form-group">
-              <label>
-                Specifications
-                <span className="label-hint">shown as a table on product page</span>
-              </label>
+              <label>Specifications <span className="label-hint">shown as a table on product page</span></label>
               <div className="specs-table">
                 <div className="specs-header-row">
                   <span className="specs-col-label">Attribute</span>
@@ -708,35 +641,13 @@ export default function EditProduct() {
                 </div>
                 {specs.map((spec, index) => (
                   <div key={index} className="spec-row">
-                    <input
-                      type="text"
-                      value={spec.key}
-                      onChange={(e) => handleSpecChange(index, "key", e.target.value)}
-                      placeholder="e.g. Material"
-                      className="spec-input"
-                    />
-                    <input
-                      type="text"
-                      value={spec.value}
-                      onChange={(e) => handleSpecChange(index, "value", e.target.value)}
-                      placeholder="e.g. Teak Wood"
-                      className="spec-input"
-                    />
-                    <button
-                      type="button"
-                      className="remove-feature-btn"
-                      onClick={() => removeSpec(index)}
-                      disabled={specs.length === 1}
-                      title="Remove"
-                    >
-                      ✕
-                    </button>
+                    <input type="text" value={spec.key} onChange={(e) => handleSpecChange(index, "key", e.target.value)} placeholder="e.g. Material" className="spec-input" />
+                    <input type="text" value={spec.value} onChange={(e) => handleSpecChange(index, "value", e.target.value)} placeholder="e.g. Teak Wood" className="spec-input" />
+                    <button type="button" className="remove-feature-btn" onClick={() => removeSpec(index)} disabled={specs.length === 1} title="Remove">✕</button>
                   </div>
                 ))}
               </div>
-              {specs.length < 15 && (
-                <button type="button" className="add-row-btn" onClick={addSpec}>+ Add Row</button>
-              )}
+              {specs.length < 15 && <button type="button" className="add-row-btn" onClick={addSpec}>+ Add Row</button>}
             </div>
           </div>
 
@@ -758,35 +669,30 @@ export default function EditProduct() {
               <span className="checkbox-text">📞 Hide price (show Call / WhatsApp instead)</span>
             </label>
             <small className="form-hint">
-              {hidePrice
-                ? 'Customers will see "📞 Call / WhatsApp: +91 97136 00059" in place of the price.'
-                : "Check to replace the displayed price with a Call/WhatsApp prompt."}
+              {hidePrice ? 'Customers will see "📞 Call / WhatsApp: +91 97136 00059" in place of the price.' : "Check to replace the displayed price with a Call/WhatsApp prompt."}
+            </small>
+          </div>
+
+          {/* Most Selling */}
+          <div className="form-group ready-stock-section">
+            <label className="checkbox-label">
+              <input type="checkbox" checked={isMostSelling} onChange={(e) => setIsMostSelling(e.target.checked)} />
+              <span className="checkbox-text">🔥 Mark as Most Selling</span>
+            </label>
+            <small className="form-hint">
+              {isMostSelling ? "This product will appear in the Most Selling section on the storefront." : "Check to feature this product in the Most Selling section."}
             </small>
           </div>
 
           {/* Ready Stock */}
           <div className="form-group ready-stock-section">
             <label className="checkbox-label">
-              <input
-                type="checkbox"
-                checked={inReadyStock}
-                onChange={(e) => {
-                  setInReadyStock(e.target.checked);
-                  if (!e.target.checked) setReadyStockQuantity("");
-                }}
-              />
+              <input type="checkbox" checked={inReadyStock} onChange={(e) => { setInReadyStock(e.target.checked); if (!e.target.checked) setReadyStockQuantity(""); }} />
               <span className="checkbox-text">📦 Add to Ready Stock</span>
             </label>
             {inReadyStock && (
               <div className="quantity-input-wrapper">
-                <input
-                  type="number"
-                  value={readyStockQuantity}
-                  onChange={(e) => setReadyStockQuantity(e.target.value)}
-                  placeholder="Enter quantity"
-                  min="1"
-                  className="quantity-input"
-                />
+                <input type="number" value={readyStockQuantity} onChange={(e) => setReadyStockQuantity(e.target.value)} placeholder="Enter quantity" min="1" className="quantity-input" />
                 <small className="form-hint">Number of units available for immediate delivery</small>
               </div>
             )}
@@ -805,7 +711,6 @@ export default function EditProduct() {
                 <span>Replace all images</span>
               </label>
             </div>
-
             <div
               className={`image-dropzone ${isDragging ? "dragging" : ""}`}
               onDragOver={handleDragOver}
@@ -813,39 +718,17 @@ export default function EditProduct() {
               onDrop={handleDrop}
               onPaste={handlePaste}
               tabIndex={0}
-              style={{
-                border: "2px dashed #ccc",
-                borderRadius: "8px",
-                padding: "24px",
-                textAlign: "center",
-                cursor: "pointer",
-                background: isDragging ? "#f0f8ff" : "transparent",
-                outline: "none",
-              }}
+              style={{ border: "2px dashed #ccc", borderRadius: "8px", padding: "24px", textAlign: "center", cursor: "pointer", background: isDragging ? "#f0f8ff" : "transparent", outline: "none" }}
             >
-              <p style={{ margin: 0, color: "#666" }}>
-                📎 Drag & drop images here, paste (Ctrl+V), or click below
-              </p>
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handleImageChange}
-                className="file-input"
-                style={{ marginTop: "12px" }}
-              />
+              <p style={{ margin: 0, color: "#666" }}>📎 Drag & drop images here, paste (Ctrl+V), or click below</p>
+              <input type="file" accept="image/*" multiple onChange={handleImageChange} className="file-input" style={{ marginTop: "12px" }} />
             </div>
-
             <small className="form-hint">
-              {replaceImages
-                ? "Max 5 images — will delete all existing images"
-                : `Can add up to ${10 - (product.images?.length || 0)} more images`}
+              {replaceImages ? "Max 5 images — will delete all existing images" : `Can add up to ${10 - (product.images?.length || 0)} more images`}
             </small>
             {imagePreviews.length > 0 && (
               <div className="new-images-preview">
-                {imagePreviews.map((preview, idx) => (
-                  <img key={idx} src={preview} alt={`Preview ${idx + 1}`} />
-                ))}
+                {imagePreviews.map((preview, idx) => <img key={idx} src={preview} alt={`Preview ${idx + 1}`} />)}
               </div>
             )}
           </div>

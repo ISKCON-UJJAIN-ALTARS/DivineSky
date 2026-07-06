@@ -95,6 +95,12 @@ export default function Navbar({ search, setSearch }) {
             <span className="stock-icon">📦</span>
             <span className="stock-text">Ready Stock</span>
           </Link>
+
+          {/* Ready Stock Button - Desktop */}
+          <Link to="/most-selling" className="ready-stock-btn desktop-ready-stock">
+            <span className="stock-icon">📦</span>
+            <span className="stock-text">Most Selling</span>
+          </Link>
         </div>
 
         {/* Nav Links - Desktop */}
