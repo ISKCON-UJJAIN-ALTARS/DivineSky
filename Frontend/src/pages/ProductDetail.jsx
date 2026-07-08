@@ -5,6 +5,7 @@ import { API_ENDPOINTS } from "../config/api";
 import "@google/model-viewer";
 import "../styles/ProductDetail.css";
 import { Helmet } from "react-helmet-async";
+import Linkify from "linkify-react";
 
 export default function ProductDetail() {
   const { category, id } = useParams();
@@ -316,6 +317,7 @@ Please provide more details about availability and delivery.`;
             <span className="product-price-value">{formatPrice(product.price)}</span>
           </div>
 
+          <Linkify>           
           {/* Features — plain pre-wrap text */}
           {description?.features && (
             <div className="product-features-section">
@@ -323,6 +325,7 @@ Please provide more details about availability and delivery.`;
               <p className="product-features-text">{description.features}</p>
             </div>
           )}
+          </Linkify>
 
           {/* Specifications Table */}
           {description?.specs?.length > 0 && (
