@@ -9,7 +9,7 @@ const MOST_SELLING_KEY = "products/most-selling.json";
 
 const VALID_CATEGORIES = [
   "altars", "deities", "sculptures", "Laser_Engravings",
-  "furniture", "tulsi_table_vyasasna", "mridanga_stand",
+  "furniture", "tulsi_table_vyasasna", "gifts", "mridanga_stand",
   "Prabhupada_altars", "temple_altar",
 ];
 
