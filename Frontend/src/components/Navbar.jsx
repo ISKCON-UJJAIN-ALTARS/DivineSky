@@ -95,6 +95,12 @@ export default function Navbar({ search, setSearch }) {
             <span className="stock-icon">📦</span>
             <span className="stock-text">Ready Stock</span>
           </Link>
+
+          {/* Ready Stock Button - Desktop */}
+          <Link to="/most-selling" className="ready-stock-btn desktop-ready-stock">
+            <span className="stock-icon">📦</span>
+            <span className="stock-text">Most Selling</span>
+          </Link>
         </div>
 
         {/* Nav Links - Desktop */}
@@ -125,6 +131,12 @@ export default function Navbar({ search, setSearch }) {
               <span className="stock-icon">📦</span> Ready Stock
             </Link>
           </li>
+          {/* Ready Stock Link - Mobile Menu Only */}
+          <li className="mobile-only-link">
+            <Link to="/most-selling" onClick={handleLinkClick}>
+              <span className="stock-icon">📦</span> Most Selling
+            </Link>
+          </li>
         </ul>
 
         {/* Mobile Actions */}
@@ -134,6 +146,12 @@ export default function Navbar({ search, setSearch }) {
             <span className="stock-icon">📦</span>
             <span className="stock-text">Ready Stock</span>
           </Link>
+
+          <Link to="/most-selling" className="mobile-ready-stock" aria-label="Most Selling">
+            <span className="stock-icon">📦</span>
+            <span className="stock-text">Most Selling</span>
+          </Link>
+          
 
           {/* Search Icon - Mobile */}
           <button
